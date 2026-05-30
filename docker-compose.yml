@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./src/frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
+
+  backend:
+    build: ./src/backend
+    ports:
+      - "8000:8000"
+    environment:
+      - CHROMA_HOST=vectordb
+      - CHROMA_PORT=8000
+    depends_on:
+      - vectordb
+
+  vectordb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+
+volumes:
+  chroma-data:
