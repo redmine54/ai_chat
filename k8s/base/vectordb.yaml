@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vectordb
+  namespace: aichat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vectordb
+  template:
+    metadata:
+      labels:
+        app: vectordb
+    spec:
+      containers:
+      - name: chromadb
+        image: chromadb/chroma:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: IS_PERSISTENT
+          value: "TRUE"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vectordb-service
+  namespace: aichat
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+  selector:
+    app: vectordb

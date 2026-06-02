@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend # 👈 baseの「backend」 Deploymentを狙い撃ちして合体
+  namespace: aichat
+spec:
+  template:
+    spec:
+      containers:
+      - name: fastapi-app # 👈 コンテナ名もbaseと一致させる
+        image: backend:local   # 👈 ローカルイメージ名に上書き
+        imagePullPolicy: Never # 👈 ローカル用の設定を追加
+        env:
+        # 💡 Minikube用の環境変数をここで上書き・追加
+        - name: GEMINI_API_KEY
+          value: "AIzaSyYourActualGeminiAPIKeyHere" # ご自身のAPIキー
+        - name: VECTORDB_URL
+          value: "http://vectordb-service.aichat.svc.cluster.local:8000"
