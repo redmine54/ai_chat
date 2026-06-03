@@ -6,7 +6,6 @@ resources:
   - ../../base
 
 # 2. Minikube環境だけで適用したい「上書き設定」
-# 例: ポッド数を1つにする、ローカル用の環境変数を差し込むなど
 patches:
   - target:
       kind: Deployment
@@ -15,3 +14,16 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 1
+  - target:
+      kind: Deployment
+      name: backend
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+
+# 3. Minikube用のイメージ名を指定
+images:
+  - name: backend-image-placeholder
+    newName: aichat
+    newTag: latest
