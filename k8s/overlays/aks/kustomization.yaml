@@ -1,10 +1,26 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# 1. 共通の土台（base）を呼び出す（相対パスで指定）
+# 1. 大元（base）の設計図を読み込む（Minikubeと全く同じベースです）
 resources:
   - ../../base
 
-# 2. 本番（AKS）専用の上書き差分ファイルを指定
+# 2. AKS（本番クラスター）だけで適用したい「上書き設定」
 patches:
-  - path: backend-patch.yaml
+  # ① バックエンドアプリの数を2個に増やして、片方が落ちても大丈夫なようにする
+  - target:
+      kind: Deployment
+      name: backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+
+  # ② Azureのロードバランサー（外向きのインターネット窓口）と連携させて、外部からアクセスできるようにする
+  - target:
+      kind: Service
+      name: backend-service
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: LoadBalancer

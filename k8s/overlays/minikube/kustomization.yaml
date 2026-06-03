@@ -1,10 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# 1. 共通の土台（base）を呼び出す（相対パスで指定）
+# 1. 大元（base）の設計図を読み込む
 resources:
   - ../../base
 
-# 2. 上書きする差分（パッチ）ファイルを指定
+# 2. Minikube環境だけで適用したい「上書き設定」
+# 例: ポッド数を1つにする、ローカル用の環境変数を差し込むなど
 patches:
-  - path: backend-patch.yaml
+  - target:
+      kind: Deployment
+      name: backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
