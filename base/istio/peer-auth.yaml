@@ -1,0 +1,10 @@
+# サービス間通信のmTLSを強制する設定
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: aichat-peer-auth
+  namespace: aichat
+spec:
+  mtls:
+    mode: STRICT
+#    mode: PERMISSIVE
