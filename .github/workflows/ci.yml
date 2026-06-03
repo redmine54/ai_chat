@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ feature/** ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: self-hosted
+
+    steps:
+      # 1. コードチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Dockerイメージのビルド
+      - name: Build Docker image
+        run: |
+          docker build -t ai_chat:latest src/backend/
+
+      # 3. unitテストの実行
+      - name: Run unit tests
+        run: |
+          docker run --rm ai_chat:latest python -m pytest tests/unit/ -v
+
+      # 4. integrationテストの実行
+      - name: Run integration tests
+        run: |
+          docker run --rm ai_chat:latest python -m pytest tests/integration/ -v
+
+      # 5. K8sマニフェストの検証
+      - name: Validate K8s manifests
+        run: |
+          kubectl apply --dry-run=client -f k8s/
