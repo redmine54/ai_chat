@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: aichat-virtualservice
+  namespace: aichat
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - aichat-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: backend-service
+            port:
+              number: 8000
