@@ -3,3 +3,4 @@ uvicorn
 chromadb
 openai
 jinja2
+python-multipart
