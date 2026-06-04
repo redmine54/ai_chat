@@ -20,7 +20,8 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t aichat:latest \
-            -f src/backend/Dockerfile .
+            -f src/backend/Dockerfile \
+            .
 
       - name: Run unit tests
         run: |
