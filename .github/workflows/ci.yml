@@ -35,4 +35,4 @@ jobs:
 
       - name: Validate K8s manifests
         run: |
-          kubectl apply --dry-run=client -f k8s/
+          kubectl apply --dry-run=client -R -f k8s/
