@@ -19,7 +19,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t aichat:latest \
+          docker build --no-cache -t aichat:latest \
             -f src/backend/Dockerfile \
             .
 
