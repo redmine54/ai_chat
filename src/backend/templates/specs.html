@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドキュメントビューア</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #faf8f5;
+            --sidebar-bg: #f0ede9;
+            --text-color: #333333;
+            --accent-color: #8fa89b; /* Muted Green */
+            --accent-hover: #768e82;
+            --border-color: #d1cbc4;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            display: block;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左右2分割のテーブルレイアウト（WeasyPrintやブラウザ表示で堅牢な構成） */
+        .wrapper-table {
+            display: table;
+            width: 100%;
+            height: 100vh;
+            table-layout: fixed;
+        }
+
+        .wrapper-row {
+            display: table-row;
+        }
+
+        /* 左側：Indexページ（サイドバー） */
+        .sidebar-cell {
+            display: table-cell;
+            width: 300px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            vertical-align: top;
+            position: relative;
+        }
+
+        .sidebar-container {
+            display: block;
+            height: 100vh;
+            padding: 20px 15px 80px 15px;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent-color);
+            color: var(--text-color);
+        }
+
+        .index-list {
+            list-style: none;
+        }
+
+        .index-item {
+            margin-bottom: 8px;
+        }
+
+        .index-link {
+            display: block;
+            padding: 10px 12px;
+            background-color: var(--white);
+            border-left: 4px solid var(--border-color);
+            border-radius: 0 4px 4px 0;
+            color: var(--text-color);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .index-link:hover, .index-link.active {
+            border-left-color: var(--accent-color);
+            background-color: var(--white);
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 最下段のプログラム説明 */
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            background-color: var(--sidebar-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-link {
+            display: block;
+            padding: 10px;
+            background-color: var(--accent-color);
+            color: var(--white);
+            text-align: center;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .footer-link:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* 右側：Viewページ */
+        .view-cell {
+            display: table-cell;
+            vertical-align: top;
+            background-color: var(--bg-color);
+        }
+
+        .view-container {
+            display: block;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* タブエリア */
+        .tabs-bar {
+            display: block;
+            background-color: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 15px 0 15px;
+            height: 50px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .tab-button {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #e4dfda;
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+            color: #666;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .tab-button.active {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-weight: bold;
+            border-bottom: 1px solid var(--bg-color);
+            margin-bottom: -1px;
+        }
+
+        /* コンテンツ表示エリア */
+        .content-body {
+            display: block;
+            height: calc(100vh - 50px);
+            padding: 30px;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+        }
+
+        /* Markdown描画スタイル (読みやすさ重視) */
+        .markdown-body {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .markdown-body h1 { font-size: 20pt; margin-bottom: 15px; color: var(--text-color); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .markdown-body h2 { font-size: 15pt; margin-top: 20px; margin-bottom: 10px; border-left: 4px solid var(--accent-color); padding-left: 8px; }
+        .markdown-body h3 { font-size: 12pt; margin-top: 15px; margin-bottom: 8px; }
+        .markdown-body p { margin-bottom: 15px; line-height: 1.7; }
+        .markdown-body ul, .markdown-body ol { margin-bottom: 15px; padding-left: 20px; }
+        .markdown-body li { margin-bottom: 4px; }
+        .markdown-body code { font-family: monospace; background-color: #eae5df; padding: 2px 4px; border-radius: 3px; }
+        .markdown-body pre { background-color: #eae5df; padding: 15px; border-radius: 5px; overflow-x: auto; margin-bottom: 15px; }
+        .markdown-body pre code { background-color: transparent; padding: 0; }
+
+        /* 初期状態・エラー時のメッセージ */
+        .placeholder-msg {
+            text-align: center;
+            color: #888;
+            margin-top: 100px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper-table">
+        <div class="wrapper-row">
+
+            <div class="sidebar-cell">
+                <div class="sidebar-container">
+                    <div class="sidebar-title"><i class="fa-solid fa-list-ul"></i> 目次 (README.md)</div>
+                    <ul class="index-list" id="indexList">
+                        <li class="placeholder-msg">目次を読み込み中...</li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-footer">
+                    <a class="footer-link" id="programDescLink">
+                        <i class="fa-solid fa-file-code"></i> プログラム説明
+                    </a>
+                </div>
+            </div>
+
+            <div class="view-cell">
+                <div class="view-container">
+                    <div class="tabs-bar" id="tabsBar">
+                        </div>
+                    <div class="content-body" id="contentBody">
+                        <div class="placeholder-msg">左側の目次を選択してください。</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 定数定義
+        const README_PATH = '/docs/README.md';
+        const ROOT_README_PATH = '/root_meta/README.md';
+
+        // DOM要素の取得
+        const indexList = document.getElementById('indexList');
+        const tabsBar = document.getElementById('tabsBar');
+        const contentBody = document.getElementById('contentBody');
+        const programDescLink = document.getElementById('programDescLink');
+
+        // データ保持用
+        let indexData = [];
+
+        // アプリケーション起動時にインデックスをロード
+        window.addEventListener('DOMContentLoaded', loadIndex);
+
+        // 1. 左側目次（./docs/README.md）の読み込みとパース
+        async function loadIndex() {
+            try {
+                const response = await fetch(README_PATH);
+                if (!response.ok) throw new Error('README.md が見つかりません。');
+                const text = await response.text();
+
+                parseAndRenderIndex(text);
+            } catch (error) {
+                indexList.innerHTML = `<li class="placeholder-msg" style="color:red;">エラー: ${error.message}</li>`;
+            }
+        }
+
+        // 2. README.mdのテキストから「1. Overview」のような目次と直下のリンクを抽出
+        function parseAndRenderIndex(text) {
+            const lines = text.split('\n');
+            indexData = [];
+            let currentItem = null;
+
+            // 正規表現: 「1. Overview」や「# 1. 項目」のような表現にマッチ
+            const headerRegex = /^(?:#+\s+)?(\d+\.\s+.+)$/;
+            // 正規表現: マークダウンのリンク [表示名](リンク先.md)
+            const linkRegex = /\[([^\]]+)\]\(([^)]+\.md)\)/g;
+
+            lines.forEach(line => {
+                const headerMatch = line.match(headerRegex);
+                if (headerMatch) {
+                    // 新しい目次項目が見つかった場合
+                    if (currentItem) indexData.push(currentItem);
+                    currentItem = {
+                        title: headerMatch[1].trim(),
+                        links: []
+                    };
+                } else if (currentItem) {
+                    // 現在の目次項目の下にあるリンクをすべて抽出
+                    let linkMatch;
+                    while ((linkMatch = linkRegex.exec(line)) !== null) {
+                        currentItem.links.push({
+                            label: linkMatch[1],
+                            path: '/docs/' + linkMatch[2] // ./docs/ からの相対パスにする
+                        });
+                    }
+                }
+            });
+            if (currentItem) indexData.push(currentItem);
+
+            // 画面に描画
+            renderIndex();
+        }
+
+        // 3. インデックスの描画
+        function renderIndex() {
+            indexList.innerHTML = '';
+            if (indexData.length === 0) {
+                indexList.innerHTML = '<li class="placeholder-msg">目次項目が見つかりません。</li>';
+                return;
+            }
+
+            indexData.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'index-item';
+
+                const a = document.createElement('a');
+                a.className = 'index-link';
+                a.textContent = item.title;
+                a.addEventListener('click', () => {
+                    // アクティブスタイルの切り替え
+                    document.querySelectorAll('.index-link, .footer-link').forEach(el => el.classList.remove('active'));
+                    a.classList.add('active');
+                    // ビューにタブとコンテンツを表示
+                    displayView(item.links);
+                });
+
+                li.appendChild(a);
+                indexList.appendChild(li);
+            });
+        }
+
+        // 4. 右側View画面へのタブとコンテンツの表示
+        function displayView(links) {
+            tabsBar.innerHTML = '';
+            contentBody.innerHTML = '';
+
+            if (!links || links.length === 0) {
+                contentBody.innerHTML = '<div class="placeholder-msg">この項目には表示するリンク先がありません。</div>';
+                return;
+            }
+
+            // 各リンクに対応するタブを生成
+            links.forEach((link, idx) => {
+                const tab = document.createElement('a');
+                tab.className = 'tab-button';
+                tab.textContent = link.label;
+                tab.addEventListener('click', () => {
+                    switchTab(links, idx);
+                });
+                tabsBar.appendChild(tab);
+            });
+
+            // 初期表示として最初のタブを選択
+            switchTab(links, 0);
+        }
+
+        // 5. タブ切り替えとMarkdownの毎回HTML変換処理
+        async function switchTab(links, activeIndex) {
+            // タブの選択状態スタイルを更新
+            const tabs = tabsBar.querySelectorAll('.tab-button');
+            tabs.forEach((tab, idx) => {
+                if (idx === activeIndex) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            // コンテンツのクリアと読み込みアニメーション表示
+            contentBody.innerHTML = '<div class="placeholder-msg"><i class="fa-solid fa-spinner fa-spin"></i> ファイルを読み込み中...</div>';
+
+            const targetLink = links[activeIndex];
+            try {
+                const response = await fetch(targetLink.path);
+                if (!response.ok) throw new Error(`ファイルの取得に失敗しました: ${targetLink.path}`);
+                const mdText = await response.text();
+
+                // 仕様要求：「Viewに表示するデータは毎回mdファイルをhtmlに変換してください」
+                // marked.parse() を使用して毎回リアルタイムでHTMLに変換
+                const htmlContent = marked.parse(mdText);
+
+                // 描画
+                contentBody.innerHTML = `<div class="markdown-body">${htmlContent}</div>`;
+                // スクロール位置を先頭に戻す
+                contentBody.scrollTop = 0;
+
+            } catch (error) {
+                contentBody.innerHTML = `<div class="placeholder-msg" style="color:red;"><i class="fa-solid fa-triangle-exclamation"></i> ${error.message}</div>`;
+            }
+        }
+
+        // 6. 最下段「プログラム説明」クリック時の処理
+        programDescLink.addEventListener('click', () => {
+            document.querySelectorAll('.index-link, .footer-link').forEach(el => el.classList.remove('active'));
+            programDescLink.classList.add('active');
+
+            // 単一のファイル（/README.md）を表示するため、1つのリンクを持つ配列を渡す
+            displayView([{
+                label: 'プログラム説明 (README.md)',
+                path: ROOT_README_PATH
+            }]);
+        });
+    </script>
+</body>
+</html>
