@@ -17,6 +17,10 @@ services:
       - CHROMA_PORT=8000
     depends_on:
       - vectordb
+    volumes:
+      - ./docs:/app/docs                              # docsをマウント
+      - ./README.md:/app/README.md                    # README.mdをマウント
+      - ./src/backend/templates:/app/templates        # templatesをマウント
 
   vectordb:
     image: chromadb/chroma:latest
