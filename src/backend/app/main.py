@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
+from pathlib import Path
 
 # /app/app/main.py → /app/app → /app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
