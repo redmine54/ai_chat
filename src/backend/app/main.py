@@ -4,6 +4,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 import os
 from pathlib import Path
 
@@ -11,11 +13,21 @@ from pathlib import Path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# キャッシュ無効化ミドルウェア
+class NoCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
+
+
 app = FastAPI(
     docs_url="/swagger/docs",
     redoc_url="/swagger/redoc",
     openapi_url="/swagger/openapi.json"
 )
+
+app.add_middleware(NoCacheMiddleware)
 
 class ChatRequest(BaseModel):
     message: str
