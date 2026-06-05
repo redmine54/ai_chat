@@ -11,7 +11,11 @@ from pathlib import Path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-app = FastAPI()
+app = FastAPI(
+    docs_url="/swagger/docs",
+    redoc_url="/swagger/redoc",
+    openapi_url="/swagger/openapi.json"
+)
 
 class ChatRequest(BaseModel):
     message: str
