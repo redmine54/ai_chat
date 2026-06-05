@@ -1,4 +1,5 @@
 # Data Flow
+<div align="right">作成日: 2026-06-05</div>
 
 ## データフロー
 
@@ -21,6 +22,7 @@
      ↓
 [ChromaDB保存]
   - コレクション: documents
+  - API: /api/v2
   - ID: UUID
   - メタデータ: source, page, chunk_index
 ```
@@ -63,8 +65,27 @@
 [ChromaDB（コンテナ内）]
      ↓ マウント
 [PersistentVolume]
+  - docker compose: chroma-dataボリューム
   - Minikube: hostPath
   - AKS: Azure Disk
+```
+
+---
+
+### DF-004: CI/CDフロー
+
+```
+[featureブランチへPush]
+     ↓
+[GitHub Actions（Self-hosted Runner）]
+  - Dockerイメージビルド
+  - Unitテスト
+  - Integrationテスト
+  - K8sマニフェスト検証（minikube/aksモード）
+     ↓
+[mainへマージ]
+     ↓
+[ArgoCD自動デプロイ]
 ```
 
 ---

@@ -1,4 +1,5 @@
 # Test Results
+<div align="right">作成日: 2026-06-05</div>
 
 ## テスト結果
 
@@ -24,6 +25,7 @@
 - 実施者:
 - ブランチ:
 - コミットID:
+- DEPLOY_ENV: compose / minikube / aks
 
 ### 結果サマリー
 
@@ -54,6 +56,11 @@
 https://github.com/redmine54/ai_chat/actions
 
 # ローカルでテスト実行
+docker build -t aichat:latest -f src/backend/Dockerfile .
 docker run --rm aichat:latest python -m pytest tests/unit/ -v
 docker run --rm aichat:latest python -m pytest tests/integration/ -v
+
+# CI履歴の削除（最新1件残す）
+gh run list --repo redmine54/ai_chat --limit 100 --json databaseId \
+  -q '.[1:][].databaseId' | xargs -I {} gh run delete {} --repo redmine54/ai_chat
 ```

@@ -1,4 +1,5 @@
 # Release Procedure
+<div align="right">作成日: 2026-06-05</div>
 
 ## リリース手順
 
@@ -9,17 +10,19 @@ featureブランチで開発
         ↓
 Pull Request作成（feature → main）
         ↓
-CI自動実行（GitHub Actions）
-  - Dockerビルド
+CI自動実行（GitHub Actions Self-hosted Runner）
+  - Dockerイメージビルド
   - Unitテスト
   - Integrationテスト
-  - K8sマニフェスト検証
+  - K8sマニフェスト検証（DEPLOY_ENVに応じて）
         ↓ CI成功
-コードレビュー
-        ↓ 承認
+コードレビュー・承認
+        ↓
 mainブランチへマージ
         ↓
 ArgoCD自動デプロイ
+        ↓
+タグ作成・GitHubリリース
 ```
 
 ---
@@ -41,6 +44,27 @@ ArgoCD自動デプロイ
 - [ ] テストが全て成功しているか
 - [ ] ドキュメントが更新されているか
 - [ ] `.gitignore`に不要なファイルが含まれていないか
+- [ ] `actions-runner/`がGit管理対象外であるか
+
+---
+
+### タグ・リリース作成手順
+
+```bash
+# mainブランチに切り替え
+git switch main
+git pull origin main
+
+# タグ作成
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+GitHubでリリース作成：
+```
+https://github.com/redmine54/ai_chat/releases/new
+→ タグを選択 → タイトル・説明を入力 → Publish release
+```
 
 ---
 
@@ -53,6 +77,9 @@ argocd app rollback aichat
 # または手動でイメージタグを変更
 kubectl set image deployment/backend \
   fastapi-app=aichat:前バージョンのタグ -n aichat
+
+# タグから修正ブランチを作成
+git checkout -b hotfix/v0.1.1 v0.1.0
 ```
 
 ---
@@ -61,5 +88,4 @@ kubectl set image deployment/backend \
 
 | バージョン | 日付 | 内容 |
 |-----------|------|------|
-| v0.1.0 | 2025-05-29 | 初期構築 |
-| v0.2.0 | 2025-06-03 | mTLS・CI/CD追加 |
+| v0.1.0 | 2026-06-05 | 初期リリース（RAG基盤・CI/CD・mTLS・ドキュメントビューア） |

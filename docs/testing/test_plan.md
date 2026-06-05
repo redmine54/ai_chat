@@ -1,4 +1,5 @@
 # Test Plan
+<div align="right">作成日: 2026-06-05</div>
 
 ## テスト計画
 
@@ -18,7 +19,7 @@
 | コンポーネント | Unitテスト | Integrationテスト |
 |--------------|-----------|-----------------|
 | RAG処理 | ✅ | ✅ |
-| ChromaDB連携 | ✅ | ✅ |
+| ChromaDB連携（API v2） | ✅ | ✅ |
 | LLM API連携 | ✅（Mock） | ✅ |
 | REST API | ✅ | ✅ |
 | PDFパース | ✅ | ✅ |
@@ -29,10 +30,24 @@
 
 | 種別 | 環境 |
 |------|------|
-| Unitテスト | ローカル・CI（Self-hosted Runner） |
-| Integrationテスト | ローカル・CI（Self-hosted Runner） |
+| Unitテスト | ローカル・CI（Self-hosted Runner on Mac M1） |
+| Integrationテスト | ローカル・CI（Self-hosted Runner on Mac M1） |
 | E2Eテスト | Minikube |
 | Performanceテスト | Minikube |
+
+---
+
+### テスト実行方法
+
+```bash
+# CI（GitHub Actions）での自動実行
+git push origin feature/xxx  # → Self-hosted Runnerが自動実行
+
+# ローカルでの手動実行
+docker build -t aichat:latest -f src/backend/Dockerfile .
+docker run --rm aichat:latest python -m pytest tests/unit/ -v
+docker run --rm aichat:latest python -m pytest tests/integration/ -v
+```
 
 ---
 

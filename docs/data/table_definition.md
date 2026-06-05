@@ -1,4 +1,5 @@
 # Table Definition
+<div align="right">作成日: 2026-06-05</div>
 
 ## データ定義
 
@@ -23,7 +24,7 @@ collection = client.create_collection(
 | metadata.source | string | ✅ | PDFファイル名 | "manual.pdf" |
 | metadata.page | integer | ✅ | ページ番号 | 3 |
 | metadata.chunk_index | integer | ✅ | チャンクインデックス | 0 |
-| metadata.created_at | string | ✅ | 登録日時（ISO8601） | "2025-06-01T00:00:00Z" |
+| metadata.created_at | string | ✅ | 登録日時（ISO8601） | "2026-06-05T00:00:00Z" |
 
 ---
 
@@ -45,3 +46,13 @@ collection = client.create_collection(
 | 変数名 | 値 | 説明 |
 |--------|-----|------|
 | IS_PERSISTENT | TRUE | データ永続化の有効化 |
+
+---
+
+### ポート定義
+
+| サービス | 内部ポート | 外部ポート（docker compose） |
+|---------|-----------|---------------------------|
+| frontend | 80 | 80 |
+| backend | 8000 | 8000 |
+| vectordb | 8000 | 8001 |

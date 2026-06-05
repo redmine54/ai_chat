@@ -1,4 +1,5 @@
 # Sequence Diagrams
+<div align="right">作成日: 2026-06-05</div>
 
 ## シーケンス図
 
@@ -8,7 +9,7 @@
 ユーザー    Frontend    Backend    ChromaDB    LLM
    │           │           │           │        │
    │─ 質問入力 ─▶│           │           │        │
-   │           │─ POST /chat ─▶│          │        │
+   │           │─ POST /api/chat ─▶│    │        │
    │           │           │─ ベクトル化 ─▶│       │
    │           │           │           │        │
    │           │           │─ 類似検索 ──▶│       │
@@ -29,11 +30,11 @@
 管理者      Frontend    Backend    ChromaDB
    │           │           │           │
    │─ PDF選択 ─▶│           │           │
-   │           │─ POST /docs ─▶│        │
+   │           │─ POST /api/docs ─▶│    │
    │           │           │─ テキスト抽出        │
    │           │           │─ チャンク分割        │
    │           │           │─ ベクトル化          │
-   │           │           │─ 保存 ──────────────▶│
+   │           │           │─ 保存（/api/v2） ───▶│
    │           │           │◀─ 保存完了 ──────────│
    │           │◀─ 完了 ────│           │
    │◀─ 完了表示 ─│           │           │
@@ -47,8 +48,8 @@
 監視システム    Backend    ChromaDB
      │             │           │
      │─ GET /health ─▶│         │
-     │             │─ 接続確認 ──▶│
-     │             │◀─ OK ───────│
+     │             │─ /api/v2/heartbeat ▶│
+     │             │◀─ 200 OK ───────────│
      │◀─ {"status": "ok"} ──────│
 ```
 
@@ -57,13 +58,29 @@
 ### SD-004: mTLS通信フロー
 
 ```
-Backend(Envoy)         ChromaDB(Envoy)
-      │                      │
-      │─ TLS ClientHello ───▶│
-      │◀─ TLS ServerHello ───│
-      │─ クライアント証明書 ──▶│
-      │◀─ サーバー証明書 ─────│
-      │─ 証明書検証           │
-      │◀─ 証明書検証          │
-      │─ 暗号化通信開始 ──────▶│
+Backend(Envoy Sidecar)    ChromaDB(Envoy Sidecar)
+      │                            │
+      │─ TLS ClientHello ─────────▶│
+      │◀─ TLS ServerHello ─────────│
+      │─ クライアント証明書（SPIFFE）▶│
+      │◀─ サーバー証明書（SPIFFE）───│
+      │─ 証明書検証（STRICT）        │
+      │◀─ 証明書検証（STRICT）       │
+      │─ 暗号化通信開始 ────────────▶│
+```
+
+---
+
+### SD-005: CI/CDフロー
+
+```
+開発者    GitHub    Runner(Mac)    Docker    K8s
+   │         │           │           │        │
+   │─ Push ─▶│           │           │        │
+   │         │─ Job実行 ─▶│           │        │
+   │         │           │─ build ──▶│        │
+   │         │           │─ test ───▶│        │
+   │         │           │─ dry-run ──────────▶│
+   │         │◀─ 結果 ────│           │        │
+   │◀─ 通知 ──│           │           │        │
 ```

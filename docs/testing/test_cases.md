@@ -1,4 +1,5 @@
 # Test Cases
+<div align="right">作成日: 2026-06-05</div>
 
 ## テストケース一覧
 
@@ -18,7 +19,7 @@
 | テストID | テスト内容 | 期待結果 |
 |---------|----------|---------|
 | UT-010 | 正常PDFのテキスト抽出 | テキストが抽出される |
-| UT-011 | 破損PDFの処理 | エラーハンドリングされる |
+| UT-011 | 破損PDFの処理 | E003エラーハンドリングされる |
 | UT-012 | 空PDFの処理 | 空文字列が返る |
 
 #### TC-001-3: APIテスト
@@ -26,10 +27,10 @@
 | テストID | テスト内容 | 期待結果 |
 |---------|----------|---------|
 | UT-020 | GET /health | 200 OK + {"status": "ok"} |
-| UT-021 | POST /chat（正常） | 200 OK + 回答テキスト |
-| UT-022 | POST /chat（空の質問） | 422 Unprocessable Entity |
-| UT-023 | POST /docs（正常PDF） | 200 OK |
-| UT-024 | POST /docs（非PDF） | 400 Bad Request |
+| UT-021 | POST /api/chat（正常） | 200 OK + 回答テキスト |
+| UT-022 | POST /api/chat（空の質問） | 422 Unprocessable Entity |
+| UT-023 | POST /api/docs（正常PDF） | 200 OK |
+| UT-024 | POST /api/docs（非PDF） | 400 Bad Request |
 
 ---
 
@@ -37,7 +38,7 @@
 
 | テストID | テスト内容 | 期待結果 |
 |---------|----------|---------|
-| IT-001 | Backend → ChromaDB接続確認 | 接続成功 |
+| IT-001 | Backend → ChromaDB接続確認（/api/v2/heartbeat） | 200 OK |
 | IT-002 | PDFアップロード → ChromaDB保存 | ベクトルが保存される |
 | IT-003 | 質問 → ChromaDB検索 → 回答生成 | 回答が返る |
 | IT-004 | ChromaDB切断時のエラーハンドリング | E001エラーが返る |
@@ -51,6 +52,7 @@
 | E2E-001 | チャット画面表示 | 画面が正常表示される |
 | E2E-002 | 質問入力→回答表示 | 回答が表示される |
 | E2E-003 | PDFアップロード | アップロード完了が表示される |
+| E2E-004 | /specsドキュメントビューア | mdが正常表示される |
 
 ---
 
