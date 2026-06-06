@@ -34,7 +34,7 @@
         overflow: hidden;
       }
 
-      /* 左右2分割のテーブルレイアウト */
+      /* 左右2分割のテーブルレイアウト（WeasyPrintやブラウザ表示で堅牢な構成） */
       .wrapper-table {
         display: table;
         width: 100%;
@@ -182,7 +182,7 @@
         background-color: var(--bg-color);
       }
 
-      /* Markdown描画スタイル */
+      /* Markdown描画スタイル (読みやすさ重視) */
       .markdown-body {
         max-width: 800px;
         margin: 0 auto;
@@ -230,48 +230,10 @@
         border-radius: 5px;
         overflow-x: auto;
         margin-bottom: 15px;
-        /* 等幅フォント（ASCII図のずれ防止） */
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-        white-space: pre;
-        line-height: 1.5;
       }
       .markdown-body pre code {
         background-color: transparent;
         padding: 0;
-        font-family: inherit;
-        white-space: pre;
-      }
-
-      /* =============================
-         表スタイル（追加）
-         ============================= */
-      .markdown-body table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 15px;
-        font-size: 13px;
-      }
-      .markdown-body th,
-      .markdown-body td {
-        border: 1px solid var(--border-color);
-        padding: 8px 12px;
-        text-align: left;
-        vertical-align: top;
-      }
-      .markdown-body th {
-        background-color: var(--sidebar-bg);
-        font-weight: bold;
-        white-space: nowrap;
-      }
-      .markdown-body tr:nth-child(even) td {
-        background-color: #f5f2ee;
-      }
-      .markdown-body tr:hover td {
-        background-color: #ede8e2;
-      }
-      /* テキスト中央寄せ（:---:指定のカラム） */
-      .markdown-body td:has(> *:only-child) {
-        text-align: center;
       }
 
       /* 初期状態・エラー時のメッセージ */
@@ -313,7 +275,9 @@
     <script>
       // 定数定義
       const README_PATH = "/api/docs/README.md";
+      //const ROOT_README_PATH = "/root_meta/README.md";
       const ROOT_README_PATH = "/api/root_meta/README.md";
+
 
       // DOM要素の取得
       const indexList = document.getElementById("indexList");
@@ -333,14 +297,15 @@
           const response = await fetch(README_PATH);
           if (!response.ok) throw new Error("README.md が見つかりません。");
           const text = await response.text();
-          console.log("README.mdの内容:", text);
+          console.log("README.mdの内容:", text); // デバッグ用ログ
+
           parseAndRenderIndex(text);
         } catch (error) {
           indexList.innerHTML = `<li class="placeholder-msg" style="color:red;">エラー: ${error.message}</li>`;
         }
       }
 
-      // 2. README.mdのテキストから目次と直下のリンクを抽出
+      // 2. README.mdのテキストから「1. Overview」のような目次と直下のリンクを抽出
       function parseAndRenderIndex(text) {
         const lines = text.split("\n");
         indexData = [];
@@ -354,22 +319,26 @@
         lines.forEach((line) => {
           const headerMatch = line.match(headerRegex);
           if (headerMatch) {
+            // 新しい目次項目が見つかった場合
             if (currentItem) indexData.push(currentItem);
             currentItem = {
               title: headerMatch[1].trim(),
               links: [],
             };
           } else if (currentItem) {
+            // 現在の目次項目の下にあるリンクをすべて抽出
             let linkMatch;
             while ((linkMatch = linkRegex.exec(line)) !== null) {
               currentItem.links.push({
                 label: linkMatch[1],
-                path: "/api/docs/" + linkMatch[2],
+                path: "/api/docs/" + linkMatch[2], // ./docs/ からの相対パスにする
               });
             }
           }
         });
         if (currentItem) indexData.push(currentItem);
+
+        // 画面に描画
         renderIndex();
       }
 
@@ -389,8 +358,10 @@
           a.className = "index-link";
           a.textContent = item.title;
           a.addEventListener("click", () => {
+            // アクティブスタイルの切り替え
             document.querySelectorAll(".index-link, .footer-link").forEach((el) => el.classList.remove("active"));
             a.classList.add("active");
+            // ビューにタブとコンテンツを表示
             displayView(item.links);
           });
 
@@ -409,6 +380,7 @@
           return;
         }
 
+        // 各リンクに対応するタブを生成
         links.forEach((link, idx) => {
           const tab = document.createElement("a");
           tab.className = "tab-button";
@@ -419,16 +391,23 @@
           tabsBar.appendChild(tab);
         });
 
+        // 初期表示として最初のタブを選択
         switchTab(links, 0);
       }
 
-      // 5. タブ切り替えとMarkdownのHTML変換処理
+      // 5. タブ切り替えとMarkdownの毎回HTML変換処理
       async function switchTab(links, activeIndex) {
+        // タブの選択状態スタイルを更新
         const tabs = tabsBar.querySelectorAll(".tab-button");
         tabs.forEach((tab, idx) => {
-          tab.classList.toggle("active", idx === activeIndex);
+          if (idx === activeIndex) {
+            tab.classList.add("active");
+          } else {
+            tab.classList.remove("active");
+          }
         });
 
+        // コンテンツのクリアと読み込みアニメーション表示
         contentBody.innerHTML = '<div class="placeholder-msg"><i class="fa-solid fa-spinner fa-spin"></i> ファイルを読み込み中...</div>';
 
         const targetLink = links[activeIndex];
@@ -437,19 +416,25 @@
           if (!response.ok) throw new Error(`ファイルの取得に失敗しました: ${targetLink.path}`);
           const mdText = await response.text();
 
+          // 仕様要求：「Viewに表示するデータは毎回mdファイルをhtmlに変換してください」
           // marked.parse() を使用して毎回リアルタイムでHTMLに変換
           const htmlContent = marked.parse(mdText);
+
+          // 描画
           contentBody.innerHTML = `<div class="markdown-body">${htmlContent}</div>`;
+          // スクロール位置を先頭に戻す
           contentBody.scrollTop = 0;
         } catch (error) {
           contentBody.innerHTML = `<div class="placeholder-msg" style="color:red;"><i class="fa-solid fa-triangle-exclamation"></i> ${error.message}</div>`;
         }
       }
 
-      // 6. 「プログラム説明」クリック時の処理
+      // 6. 最下段「プログラム説明」クリック時の処理
       programDescLink.addEventListener("click", () => {
         document.querySelectorAll(".index-link, .footer-link").forEach((el) => el.classList.remove("active"));
         programDescLink.classList.add("active");
+
+        // 単一のファイル（/README.md）を表示するため、1つのリンクを持つ配列を渡す
         displayView([
           {
             label: "プログラム説明 (README.md)",
