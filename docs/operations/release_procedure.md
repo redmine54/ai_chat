@@ -5,24 +5,19 @@
 
 ### リリースフロー
 
-```
-featureブランチで開発
-        ↓
-Pull Request作成（feature → main）
-        ↓
-CI自動実行（GitHub Actions Self-hosted Runner）
-  - Dockerイメージビルド
-  - Unitテスト
-  - Integrationテスト
-  - K8sマニフェスト検証（DEPLOY_ENVに応じて）
-        ↓ CI成功
-コードレビュー・承認
-        ↓
-mainブランチへマージ
-        ↓
-ArgoCD自動デプロイ
-        ↓
-タグ作成・GitHubリリース
+```mermaid
+flowchart TD
+    A[featureブランチで開発] --> B[Pull Request作成\nfeature → main]
+    B --> C[CI自動実行\nGitHub Actions Self-hosted Runner]
+    C --> C1[Dockerイメージビルド]
+    C --> C2[Unitテスト]
+    C --> C3[Integrationテスト]
+    C --> C4[K8sマニフェスト検証\nDEPLOY_ENVに応じて]
+    C1 & C2 & C3 & C4 --> D{CI成功}
+    D --> E[コードレビュー・承認]
+    E --> F[mainブランチへマージ]
+    F --> G[ArgoCD自動デプロイ]
+    G --> H[タグ作成・GitHubリリース]
 ```
 
 ---

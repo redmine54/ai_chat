@@ -13,18 +13,14 @@
 | 実行環境 | Kubernetes Job |
 
 **処理フロー:**
-```
-1. 対象PDFファイルの読み込み
-        ↓
-2. テキスト抽出（PyPDF2）
-        ↓
-3. チャンク分割（chunk_size=500, overlap=50）
-        ↓
-4. ベクトル化（Embedding Model）
-        ↓
-5. ChromaDB（/api/v2）への保存
-        ↓
-6. 処理結果のログ出力
+
+```mermaid
+flowchart TD
+    A[対象PDFファイルの読み込み] --> B[テキスト抽出\nPyPDF2]
+    B --> C[チャンク分割\nchunk_size=500, overlap=50]
+    C --> D[ベクトル化\nEmbedding Model]
+    D --> E[ChromaDB /api/v2 への保存]
+    E --> F[処理結果のログ出力]
 ```
 
 **パラメータ:**
@@ -56,10 +52,9 @@
 | 実行環境 | Kubernetes Job |
 
 **処理フロー:**
-```
-1. 削除対象ドキュメントIDの取得
-        ↓
-2. ChromaDB（/api/v2）から該当ベクトルの削除
-        ↓
-3. 処理結果のログ出力
+
+```mermaid
+flowchart TD
+    A[削除対象ドキュメントIDの取得] --> B[ChromaDB /api/v2 から\n該当ベクトルの削除]
+    B --> C[処理結果のログ出力]
 ```

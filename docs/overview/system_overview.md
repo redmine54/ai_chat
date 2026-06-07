@@ -7,24 +7,18 @@
 
 ## システム構成図
 
-```
-社内ユーザー（ブラウザ）
-        ↓ HTTPS（Istio Gateway）
-Istio IngressGateway
-        ↓ mTLS（STRICT）
-    ┌───────────────────────────────┐
-    │  Kubernetes Cluster（aichat） │
-    │                               │
-    │  ┌─────────┐  ┌───────────┐  │
-    │  │ Frontend │  │  Backend  │  │
-    │  │ (Nginx)  │→ │ (FastAPI) │  │
-    │  └─────────┘  └─────┬─────┘  │
-    │                     ↓ mTLS   │
-    │               ┌───────────┐  │
-    │               │  VectorDB │  │
-    │               │ (ChromaDB)│  │
-    │               └───────────┘  │
-    └───────────────────────────────┘
+```mermaid
+graph TD
+    User([社内ユーザー\nブラウザ]) -->|HTTPS\nIstio Gateway| IGW[Istio IngressGateway]
+    IGW -->|mTLS STRICT| FE[Frontend\nNginx]
+    IGW -->|mTLS STRICT| BE[Backend\nFastAPI]
+    BE -->|mTLS| VDB[VectorDB\nChromaDB]
+
+    subgraph K8s[Kubernetes Cluster / aichat]
+        FE
+        BE
+        VDB
+    end
 ```
 
 ## コンポーネント
@@ -42,18 +36,13 @@ Istio IngressGateway
 
 ## RAG処理フロー
 
-```
-1. ユーザーが質問を入力
-        ↓
-2. バックエンドが質問をベクトル化
-        ↓
-3. ChromaDBから関連ドキュメントを検索（TOP_K=5）
-        ↓
-4. 関連ドキュメント＋質問をLLMに送信
-        ↓
-5. LLMが回答を生成
-        ↓
-6. ユーザーに回答を返却
+```mermaid
+flowchart TD
+    A[1. ユーザーが質問を入力] --> B[2. バックエンドが質問をベクトル化]
+    B --> C[3. ChromaDBから関連ドキュメントを検索\nTOP_K=5]
+    C --> D[4. 関連ドキュメント＋質問をLLMに送信]
+    D --> E[5. LLMが回答を生成]
+    E --> F[6. ユーザーに回答を返却]
 ```
 
 ## 環境構成

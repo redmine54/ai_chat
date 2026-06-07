@@ -1,5 +1,5 @@
 #!/bin/bash
 echo "🔒 HTTPS（minikube tunnel）モードで起動します"
 minikube tunnel
-echo "👉 https://localhost/docs"
+echo "👉 https://localhost/swagger/docs"
 # 注意: httpsは証明書（aichat-tls）が必要です
