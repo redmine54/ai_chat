@@ -66,6 +66,13 @@
 
 ---
 
-## 8. 開発環境
+## 8. ソフト設計規定
 
-- [基本仕様](開発環境/基本仕様.md)
+- [開発設計方針](開発環境/開発環境設計方針.md)
+- [基本仕様](開発環境/basic_spec.md)
+- [1.環境別対応範囲](開発環境/01_environment_scope.md)
+- [2.GitLab運用ポイント](開発環境/02_gitlab_operations.md)
+- [3.セキュリティ設計](開発環境/03_security_design.md)
+- [4.ITGC対応](開発環境/04_itgc.md)
+- [5.FinOps運用](開発環境/05_finops.md)
+- [6.自動化項目](開発環境/06_automation.md)
