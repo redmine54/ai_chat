@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ドキュメントビューア</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
       :root {
@@ -311,6 +312,9 @@
     </div>
 
     <script>
+      // Mermaid初期化
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+
       // 定数定義
       const README_PATH = "/api/docs/README.md";
       const ROOT_README_PATH = "/api/root_meta/README.md";
@@ -440,6 +444,8 @@
           // marked.parse() を使用して毎回リアルタイムでHTMLに変換
           const htmlContent = marked.parse(mdText);
           contentBody.innerHTML = `<div class="markdown-body">${htmlContent}</div>`;
+          // Mermaid図をレンダリング
+          await mermaid.run({ nodes: contentBody.querySelectorAll('.language-mermaid') });
           contentBody.scrollTop = 0;
         } catch (error) {
           contentBody.innerHTML = `<div class="placeholder-msg" style="color:red;"><i class="fa-solid fa-triangle-exclamation"></i> ${error.message}</div>`;

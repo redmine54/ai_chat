@@ -5,35 +5,26 @@
 
 ### 全体構成
 
-```
-社内ユーザー
-    ↓ HTTPS（TLS終端）
-Istio IngressGateway
-    ↓ mTLS（STRICT）
-┌────────────────────────────────────────┐
-│  Kubernetes Cluster                    │
-│  Namespace: aichat                     │
-│                                        │
-│  ┌──────────┐    ┌──────────────────┐  │
-│  │ Frontend │───▶│    Backend       │  │
-│  │ (Nginx)  │    │   (FastAPI)      │  │
-│  └──────────┘    └────────┬─────────┘  │
-│                           │ mTLS       │
-│                  ┌────────▼─────────┐  │
-│                  │    VectorDB      │  │
-│                  │   (ChromaDB)     │  │
-│                  └──────────────────┘  │
-│                                        │
-│  ┌──────────────────────────────────┐  │
-│  │  Namespace: argocd               │  │
-│  │  ArgoCD（GitOps CD）             │  │
-│  └──────────────────────────────────┘  │
-│                                        │
-│  ┌──────────────────────────────────┐  │
-│  │  Namespace: istio-system         │  │
-│  │  Istio（サービスメッシュ）        │  │
-│  └──────────────────────────────────┘  │
-└────────────────────────────────────────┘
+```mermaid
+graph TD
+    User([社内ユーザー]) -->|HTTPS TLS終端| IGW[Istio IngressGateway]
+    IGW -->|mTLS STRICT| FE[Frontend\nNginx]
+    IGW -->|mTLS STRICT| BE[Backend\nFastAPI]
+    BE -->|mTLS| VDB[VectorDB\nChromaDB]
+
+    subgraph K8s[Kubernetes Cluster / Namespace: aichat]
+        FE
+        BE
+        VDB
+    end
+
+    subgraph ArgoNS[Namespace: argocd]
+        ARGO[ArgoCD\nGitOps CD]
+    end
+
+    subgraph IstioNS[Namespace: istio-system]
+        ISTIO[Istio\nサービスメッシュ]
+    end
 ```
 
 ---
@@ -83,20 +74,19 @@ Istio IngressGateway
 
 ### CI/CDパイプライン
 
-```
-開発者がfeatureブランチにPush
-        ↓
-GitHub Actions（Self-hosted Runner on Mac M1）
-  DEPLOY_ENV=compose  → K8s検証スキップ
-  DEPLOY_ENV=minikube → minikubeでdry-run
-  DEPLOY_ENV=aks      → AKSでdry-run
-        ↓ CI成功
-Pull Request → mainへマージ
-        ↓
-ArgoCD（GitOps）
-  → K8sへ自動デプロイ
-        ↓
-タグ作成 → GitHubリリース
+```mermaid
+flowchart TD
+    A[開発者がfeatureブランチにPush] --> B[GitHub Actions\nSelf-hosted Runner on Mac M1]
+    B --> C{DEPLOY_ENV}
+    C -->|compose| D[K8s検証スキップ]
+    C -->|minikube| E[minikubeでdry-run]
+    C -->|aks| F[AKSでdry-run]
+    D --> G[CI成功]
+    E --> G
+    F --> G
+    G --> H[Pull Request → mainへマージ]
+    H --> I[ArgoCD GitOps\nK8sへ自動デプロイ]
+    I --> J[タグ作成 → GitHubリリース]
 ```
 
 ---
