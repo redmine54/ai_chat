@@ -14,8 +14,10 @@
 | サービス | URL |
 |---------|-----|
 | フロントエンド | http://localhost:80 |
-| バックエンド API | http://localhost:8000/docs |
-| ドキュメントビューア | http://localhost:8000/specs |
+| バックエンド API（HTTP） | http://localhost:8000/swagger/docs |
+| ドキュメントビューア（HTTP） | http://localhost:8000/api/specs |
+| バックエンド API（HTTPS） | https://localhost/swagger/docs |
+| ドキュメントビューア（HTTPS） | https://localhost/api/specs |
 | ChromaDB | http://localhost:8001 |
 
 #### システム起動（Minikubeモード・HTTP）
@@ -23,7 +25,8 @@
 ```bash
 ./switch_to_minikube.sh
 ./switch_to_http.sh
-# アクセス: http://localhost:8080/docs
+# ドキュメントビューア: http://localhost:8090/api/specs
+# バックエンド API:     http://localhost:8090/swagger/docs
 ```
 
 #### システム起動（Minikubeモード・HTTPS）
@@ -31,8 +34,18 @@
 ```bash
 ./switch_to_minikube.sh
 ./switch_to_https.sh
-# アクセス: https://localhost/docs
+# ドキュメントビューア: https://localhost/api/specs
+# バックエンド API:     https://localhost/swagger/docs
 ```
+
+#### システム起動（AKS環境）
+
+| サービス | URL |
+|---------|-----|
+| ドキュメントビューア（HTTP） | http://localhost:8090/api/specs |
+| バックエンド API（HTTP） | http://localhost:8090/swagger/docs |
+| ドキュメントビューア（HTTPS） | https://localhost/api/specs |
+| バックエンド API（HTTPS） | https://localhost/swagger/docs |
 
 #### GitHub Actions Runner起動
 
