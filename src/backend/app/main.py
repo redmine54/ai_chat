@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
@@ -87,7 +87,7 @@ async def index_pdf(request: IndexRequest):
         raise HTTPException(status_code=500, detail=f"インデックス化に失敗しました: {str(e)}")
 
 
-# 1. HTMLテンプレートを置くディレクトリを指定
+# HTMLテンプレートディレクトリ
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # favicon
@@ -95,21 +95,25 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 async def favicon():
     return FileResponse(os.path.join(BASE_DIR, "static", "favicon.ico"))
 
-# 2. docsディレクトリを静的ファイルとして公開
+# docsディレクトリを静的ファイルとして公開
 app.mount("/api/docs", StaticFiles(directory=os.path.join(BASE_DIR, "docs")), name="docs")
 
-# 3. ルート直下のREADME.md用
+# ルート直下のREADME.md用
 if os.path.exists(os.path.join(BASE_DIR, "README.md")):
     app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
 
-# 4. ドキュメントビューア
+# チャット画面（メイン）
+@app.get("/", response_class=HTMLResponse)
+@app.get("/api/chat/ui", response_class=HTMLResponse)
+async def read_chat(request: Request):
+    return templates.TemplateResponse(request, "chat.html")
+
+# ドキュメントビューア
 @app.get("/api/specs", response_class=HTMLResponse)
 async def read_specs(request: Request):
-    print(f"BASE_DIR : {BASE_DIR}")
-    print(f"request : {request}")
     return templates.TemplateResponse(request, "specs.html")
 
-# 5. PDFインデクサー画面
+# PDFインデクサー画面
 @app.get("/api/indexer", response_class=HTMLResponse)
 async def read_indexer(request: Request):
     return templates.TemplateResponse(request, "indexer.html")

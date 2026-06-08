@@ -4,9 +4,12 @@ FROM python:3.12-slim
 # 2. コンテナ内の作業ディレクトリを /app に設定
 WORKDIR /app
 
-# 3. システムパッケージのインストール
+# 3. システムパッケージのインストール（tesseract OCR追加）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    tesseract-ocr \
+    tesseract-ocr-jpn \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. requirements.txtをコピー（コンテキストがルートのためパス変更）
