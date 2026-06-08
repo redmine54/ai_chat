@@ -1,5 +1,5 @@
 # Sequence Diagrams
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-08</div>
 
 ## シーケンス図
 
@@ -11,7 +11,7 @@ sequenceDiagram
     participant FE as Frontend
     participant BE as Backend
     participant DB as ChromaDB
-    participant LLM as LLM
+    participant LLM as Claude API
 
     User->>FE: 質問入力
     FE->>BE: POST /api/chat
@@ -25,24 +25,29 @@ sequenceDiagram
 
 ---
 
-### SD-002: PDFアップロードフロー
+### SD-002: PDFインデックス化フロー
 
 ```mermaid
 sequenceDiagram
     actor Admin as 管理者
-    participant FE as Frontend
+    participant UI as インデクサーWebUI\n/api/indexer
     participant BE as Backend
     participant DB as ChromaDB
 
-    Admin->>FE: PDF選択
-    FE->>BE: POST /api/docs
-    BE->>BE: テキスト抽出
+    Admin->>UI: ブラウザでアクセス
+    UI->>BE: GET /api/pdf/list
+    BE-->>UI: PDFファイル一覧
+    UI-->>Admin: ファイル一覧表示
+
+    Admin->>UI: インデックス化ボタンをクリック
+    UI->>BE: POST /api/pdf/index\n{filename: "xxx.pdf"}
+    BE->>BE: ファイル存在チェック
+    BE->>BE: テキスト抽出（PyPDF）
     BE->>BE: チャンク分割
-    BE->>BE: ベクトル化
-    BE->>DB: 保存（/api/v2）
+    BE->>DB: ベクトル保存（/api/v2）
     DB-->>BE: 保存完了
-    BE-->>FE: 完了
-    FE-->>Admin: 完了表示
+    BE-->>UI: {status: success, chunks: N}
+    UI-->>Admin: 完了ログ表示
 ```
 
 ---

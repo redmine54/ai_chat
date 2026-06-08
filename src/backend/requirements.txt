@@ -1,7 +1,8 @@
 fastapi
 uvicorn
 chromadb
-openai
+google-generativeai
+pypdf
 jinja2
 python-multipart
 pytest

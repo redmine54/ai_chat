@@ -1,9 +1,11 @@
 # Program Specification
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-08</div>
 
 対象モジュール名: ai_chat Backend（FastAPI）
 作成者: 開発チーム
-更新履歴: 2026-06-05 初版作成
+更新履歴:
+- 2026-06-05 初版作成
+- 2026-06-08 PDFインデクサー機能追加・Gemini API対応
 
 ---
 
@@ -16,9 +18,9 @@
 ## 2. 前提条件（Prerequisites）
 
 - 対象システム: ai_chat
-- 使用技術: Python 3.12, FastAPI, ChromaDB（API v2）, Istio mTLS
+- 使用技術: Python 3.12, FastAPI, ChromaDB（API v2）, Istio mTLS, Google Gemini API
 - 実行環境: docker compose / Minikube / AKS
-- 想定ユーザー: 社内従業員
+- 想定ユーザー: 社内従業員・管理者
 
 ---
 
@@ -28,84 +30,143 @@
 - API Specification
 - Data Flow
 - Error Handling
+- Batch Specification
 
 ---
 
 ## 4. 処理概要（Process Overview）
 
+### 4.1 チャット処理
 1. ユーザーからの質問を受信（POST /api/chat）
-2. 質問をベクトル化してChromaDBで類似検索
-3. LLMに送信して回答を生成・返却
+2. Gemini text-embedding-004でクエリをベクトル化してChromaDBで類似検索
+3. Gemini gemini-1.5-flashで回答を生成・返却
+
+### 4.2 PDFインデックス化処理
+1. data/配下のPDFファイル一覧を取得（GET /api/pdf/list）
+2. 指定PDFをテキスト抽出・チャンク分割・Gemini text-embedding-004でベクトル化してChromaDBに登録（POST /api/pdf/index）
 
 ---
 
-## 5. 入出力仕様（I/O Specification）
+## 5. 環境変数（Environment Variables）
 
-### 5.1 入力（Input）
+| 変数名 | 必須 | デフォルト値 | 説明 |
+|--------|------|------------|------|
+| GEMINI_API_KEY | ✅ | なし | Google Gemini API認証キー |
+| CHROMA_HOST | ✅ | vectordb | ChromaDB接続ホスト名 |
+| CHROMA_PORT | ✅ | 8000 | ChromaDB接続ポート |
+
+> ⚠️ `GEMINI_API_KEY` はソースコードに直接記載禁止。`.env` ファイルまたはk8s Secretで管理すること。
+
+---
+
+## 6. 使用モデル（Models）
+
+| 用途 | モデル名 | 説明 |
+|------|---------|------|
+| ベクトル化（埋め込み） | text-embedding-004 | PDFチャンク・クエリのベクトル化 |
+| 回答生成 | gemini-1.5-flash | RAGコンテキストを元に回答生成 |
+
+---
+
+## 7. 入出力仕様（I/O Specification）
+
+### 7.1 チャット機能
+
+**入力（Input）:**
 
 | 項目名 | 型 | 必須 | 説明 |
 |--------|-----|------|------|
 | message | string | ✅ | ユーザーの質問テキスト |
 
-### 5.2 出力（Output）
+**出力（Output）:**
 
 | 項目名 | 型 | 説明 |
 |--------|-----|------|
-| answer | string | LLMが生成した回答テキスト |
+| answer | string | Geminiが生成した回答テキスト |
+
+### 7.2 PDFインデックス化機能
+
+**入力（Input）:**
+
+| 項目名 | 型 | 必須 | 説明 |
+|--------|-----|------|------|
+| filename | string | ✅ | data/配下のPDFファイル名 |
+
+**出力（Output）:**
+
+| 項目名 | 型 | 説明 |
+|--------|-----|------|
+| status | string | 処理結果（success / error） |
+| filename | string | 処理したPDFファイル名 |
+| document_id | string | ChromaDBに登録したドキュメントID |
+| chunks | int | 登録したチャンク数 |
 
 ---
 
-## 6. 詳細処理仕様（Detailed Logic）
+## 8. 詳細処理仕様（Detailed Logic）
 
-### 6.1 処理ステップ
+### 8.1 チャット処理ステップ
 
 | Step | 処理内容 | 条件 | 備考 |
 |------|-----------|--------|--------|
 | 1 | リクエスト受信 | POST /api/chat | Pydanticでバリデーション |
-| 2 | 質問のベクトル化 | 常時 | Embedding Model使用 |
+| 2 | クエリのベクトル化 | 常時 | Gemini text-embedding-004使用 |
 | 3 | ChromaDB検索 | 常時 | TOP_K=5、コサイン類似度 |
-| 4 | プロンプト生成 | 常時 | システムプロンプト+コンテキスト+質問 |
-| 5 | LLM API呼び出し | 常時 | タイムアウト設定あり |
-| 6 | レスポンス返却 | 常時 | 回答テキスト+参照ドキュメント |
+| 4 | プロンプト生成 | 常時 | コンテキスト+質問を結合 |
+| 5 | Gemini API呼び出し | 常時 | gemini-1.5-flash |
+| 6 | レスポンス返却 | 常時 | 回答テキスト |
 
-### 6.2 擬似コード（Pseudo Code）
+### 8.2 PDFインデックス化処理ステップ
+
+| Step | 処理内容 | 条件 | 備考 |
+|------|-----------|--------|--------|
+| 1 | ファイル存在チェック | POST /api/pdf/index | 存在しない場合404を返却 |
+| 2 | 拡張子チェック | 常時 | PDF以外は400を返却 |
+| 3 | テキスト抽出 | 常時 | PyPDFを使用 |
+| 4 | チャンク分割 | 常時 | chunk_size=500, overlap=100 |
+| 5 | Geminiでベクトル化・ChromaDB登録 | 常時 | text-embedding-004使用 |
+| 6 | チャンク数を返却 | 常時 | 登録件数を返却 |
+
+### 8.3 擬似コード（Pseudo Code）
 
 ```python
+# チャット処理
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    # 1. 質問のベクトル化
-    vector = embedding_model.encode(request.message)
-    
-    # 2. ChromaDB検索（API v2）
-    results = chroma_client.query(
-        query_embeddings=[vector],
-        n_results=TOP_K
-    )
-    
-    # 3. プロンプト生成
-    context = "\n".join(results["documents"])
-    prompt = f"{SYSTEM_PROMPT}\n\nコンテキスト:\n{context}\n\n質問: {request.message}"
-    
-    # 4. LLM API呼び出し
-    answer = llm_client.generate(prompt)
-    
-    return {"answer": answer}
+    results = collection.query(query_texts=[request.message], n_results=5)
+    context = "\n".join(results["documents"][0])
+    prompt = f"【参考資料】\n{context}\n\n【質問】\n{request.message}"
+    response = generation_model.generate_content(prompt)
+    return {"answer": response.text}
+
+# PDFインデックス化処理
+@app.post("/api/pdf/index")
+async def index_pdf(request: IndexRequest):
+    pdf_path = os.path.join(DATA_DIR, request.filename)
+    if not os.path.exists(pdf_path): raise HTTPException(404)
+    if not request.filename.endswith(".pdf"): raise HTTPException(400)
+    document_id = Path(request.filename).stem
+    chunk_count = extract_and_store_pdf(pdf_path, document_id)
+    return {"status": "success", "chunks": chunk_count}
 ```
 
 ---
 
-## 7. エラー処理（Error Handling）
+## 9. エラー処理（Error Handling）
 
 | エラーコード | 発生条件 | 対応 |
 |--------------|------------|--------|
 | E001 | ChromaDB接続失敗 | リトライ3回後エラー返却 |
-| E002 | LLM API失敗 | エラーメッセージ返却 |
+| E002 | Gemini API失敗 | エラーメッセージ返却 |
+| E003 | PDFパースエラー | スキップしてログに記録 |
+| E004 | ベクトル化エラー（Gemini） | エラーメッセージ返却 |
 | E005 | 関連ドキュメントなし | 専用メッセージ返却 |
 
 ---
 
-## 8. 性能要件（Performance Requirements）
+## 10. 性能要件（Performance Requirements）
 
 - チャット応答時間: 30秒以内
 - ドキュメント検索時間: 3秒以内
+- PDFインデックス化時間: ファイルサイズに依存（目安: 10MB以内で60秒以内）
 - 同時接続ユーザー数: 10ユーザー以上
