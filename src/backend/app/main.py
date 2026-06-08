@@ -1,16 +1,18 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 import os
+import glob
 from pathlib import Path
 
 # /app/app/main.py → /app/app → /app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
 # キャッシュ無効化ミドルウェア
@@ -29,19 +31,61 @@ app = FastAPI(
 
 app.add_middleware(NoCacheMiddleware)
 
+
 class ChatRequest(BaseModel):
     message: str
+
+
+class IndexRequest(BaseModel):
+    filename: str  # data/配下のファイル名
+
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     # フェーズ2時点ではモック（オウム返し）を返す
     return {"answer": f"受信しました: {request.message}"}
 
+
+@app.get("/api/pdf/list")
+async def list_pdfs():
+    """data/配下のPDFファイル一覧を返す"""
+    pdf_files = glob.glob(os.path.join(DATA_DIR, "*.pdf"))
+    filenames = [os.path.basename(f) for f in pdf_files]
+    return {"files": filenames}
+
+
+@app.post("/api/pdf/index")
+async def index_pdf(request: IndexRequest):
+    """指定したPDFをインデックス化してChromaDBに登録する"""
+    from app.rag import extract_and_store_pdf
+
+    pdf_path = os.path.join(DATA_DIR, request.filename)
+
+    # ファイル存在チェック
+    if not os.path.exists(pdf_path):
+        raise HTTPException(status_code=404, detail=f"ファイルが見つかりません: {request.filename}")
+
+    # 拡張子チェック
+    if not request.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="PDFファイルのみ対応しています")
+
+    try:
+        document_id = Path(request.filename).stem
+        chunk_count = extract_and_store_pdf(pdf_path, document_id)
+        return {
+            "status": "success",
+            "filename": request.filename,
+            "document_id": document_id,
+            "chunks": chunk_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"インデックス化に失敗しました: {str(e)}")
+
+
 # 1. HTMLテンプレートを置くディレクトリを指定
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # /app/app/static/favicon.ico を作る。
-#app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse(os.path.join(BASE_DIR, "static", "favicon.ico"))
@@ -53,12 +97,14 @@ app.mount("/api/docs", StaticFiles(directory=os.path.join(BASE_DIR, "docs")), na
 if os.path.exists(os.path.join(BASE_DIR, "README.md")):
     app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
 
-# 4. http://localhost:8000/specs にアクセスしたときの処理
+# 4. http://localhost:8000/api/specs にアクセスしたときの処理
 @app.get("/api/specs", response_class=HTMLResponse)
 async def read_specs(request: Request):
     print(f"BASE_DIR : {BASE_DIR}")
     print(f"request : {request}")
-
     return templates.TemplateResponse(request, "specs.html")
 
-#    return templates.TemplateResponse("specs.html", {"request": request})
+# 5. PDFインデクサー画面
+@app.get("/api/indexer", response_class=HTMLResponse)
+async def read_indexer(request: Request):
+    return templates.TemplateResponse(request, "indexer.html")

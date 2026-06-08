@@ -1,11 +1,15 @@
 #src/backend/app/rag.py
+import os
 import anthropic
 from chromadb import HttpClient
 from pypdf import PdfReader
 
-# 各種クライアントの初期化
-claude_client = anthropic.Anthropic(api_key="your_claude_api_key")
-chroma_client = HttpClient(host="vectordb", port=8000)
+# 各種クライアントの初期化（環境変数から取得）
+claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+chroma_client = HttpClient(
+    host=os.environ.get("CHROMA_HOST", "vectordb"),
+    port=int(os.environ.get("CHROMA_PORT", 8000))
+)
 collection = chroma_client.get_or_create_collection(name="pdf_documents")
 
 def extract_and_store_pdf(pdf_path: str, document_id: str):
@@ -15,7 +19,7 @@ def extract_and_store_pdf(pdf_path: str, document_id: str):
     for page in reader.pages:
         full_text += page.extract_text() or ""
 
-    # 簡易的にテキストをチャンク分割（実際は適切な文字数で分割）
+    # テキストをチャンク分割
     chunks = [full_text[i:i+500] for i in range(0, len(full_text), 400)]
 
     # ベクトルDBに登録（Chromaがデフォルトの埋め込みモデルを適用）
@@ -23,6 +27,7 @@ def extract_and_store_pdf(pdf_path: str, document_id: str):
         documents=chunks,
         ids=[f"{document_id}_{i}" for i in range(len(chunks))]
     )
+    return len(chunks)
 
 def answer_with_rag(user_query: str) -> str:
     """2. ユーザーの質問に対してRAGで回答生成"""
