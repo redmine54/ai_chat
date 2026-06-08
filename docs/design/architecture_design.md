@@ -1,5 +1,5 @@
 # Architecture Design
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-08</div>
 
 ## アーキテクチャ設計
 
@@ -8,9 +8,11 @@
 ```mermaid
 graph TD
     User([社内ユーザー]) -->|HTTPS TLS終端| IGW[Istio IngressGateway]
+    Admin([管理者]) -->|HTTPS TLS終端| IGW
     IGW -->|mTLS STRICT| FE[Frontend\nNginx]
     IGW -->|mTLS STRICT| BE[Backend\nFastAPI]
     BE -->|mTLS| VDB[VectorDB\nChromaDB]
+    BE -->|HTTPS| LLM[Gemini API\nGoogle]
 
     subgraph K8s[Kubernetes Cluster / Namespace: aichat]
         FE
@@ -45,9 +47,11 @@ graph TD
 |------|------|
 | イメージ | aichat:latest（カスタムビルド） |
 | ポート | 8000 |
-| 役割 | RAG処理・LLM連携・REST API提供 |
-| 環境変数 | CHROMA_HOST, CHROMA_PORT |
-| エンドポイント | /api/chat, /specs, /docs |
+| 役割 | RAG処理・LLM連携・REST API提供・PDFインデックス化 |
+| 環境変数 | CHROMA_HOST, CHROMA_PORT, GEMINI_API_KEY |
+| エンドポイント | /api/chat, /api/specs, /api/indexer, /api/pdf/list, /api/pdf/index |
+
+> ⚠️ `GEMINI_API_KEY` はソースコードに直接記載禁止。`.env` またはk8s Secretで管理すること。
 
 #### VectorDB（ChromaDB）
 
@@ -58,6 +62,16 @@ graph TD
 | 役割 | ベクトルデータの保存・検索 |
 | API | /api/v2 |
 | 永続化 | PersistentVolume |
+
+#### LLM（Gemini API）
+
+| 項目 | 内容 |
+|------|------|
+| サービス | Google Gemini API |
+| 埋め込みモデル | text-embedding-004 |
+| 生成モデル | gemini-1.5-flash |
+| 役割 | PDFベクトル化・RAG回答生成 |
+| 認証 | GEMINI_API_KEY（環境変数） |
 
 ---
 
@@ -97,6 +111,7 @@ flowchart TD
 |---------|------|------|
 | 外部通信 | HTTPS（TLS） | Istio Gateway + 自己署名証明書 |
 | サービス間通信 | mTLS（STRICT） | Istio PeerAuthentication |
+| APIキー管理 | 環境変数・Secrets管理 | .env / k8s Secret / Azure Key Vault |
 | 認証 | Azure AD連携 | 予定 |
 | ネットワーク | 社内限定 | NetworkPolicy |
 
@@ -109,3 +124,4 @@ flowchart TD
 | Gateway | base/istio/gateway.yaml | 外部HTTPSトラフィック受付 |
 | PeerAuthentication | base/istio/peer-auth.yaml | mTLS STRICT設定 |
 | VirtualService | base/istio/virtual-service.yaml | トラフィックルーティング |
+| DestinationRule | base/istio/destination-rule.yaml | mTLS ISTIO_MUTUAL設定 |

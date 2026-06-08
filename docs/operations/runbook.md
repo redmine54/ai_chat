@@ -1,5 +1,5 @@
 # Runbook
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-08</div>
 
 ## 運用手順書
 
@@ -16,8 +16,10 @@
 | フロントエンド | http://localhost:80 |
 | バックエンド API（HTTP） | http://localhost:8000/swagger/docs |
 | ドキュメントビューア（HTTP） | http://localhost:8000/api/specs |
+| PDFインデクサー（HTTP） | http://localhost:8000/api/indexer |
 | バックエンド API（HTTPS） | https://localhost/swagger/docs |
 | ドキュメントビューア（HTTPS） | https://localhost/api/specs |
+| PDFインデクサー（HTTPS） | https://localhost/api/indexer |
 | ChromaDB | http://localhost:8001 |
 
 #### システム起動（Minikubeモード・HTTP）
@@ -27,6 +29,7 @@
 ./switch_to_http.sh
 # ドキュメントビューア: http://localhost:8090/api/specs
 # バックエンド API:     http://localhost:8090/swagger/docs
+# PDFインデクサー:      http://localhost:8090/api/indexer
 ```
 
 #### システム起動（Minikubeモード・HTTPS）
@@ -36,6 +39,7 @@
 ./switch_to_https.sh
 # ドキュメントビューア: https://localhost/api/specs
 # バックエンド API:     https://localhost/swagger/docs
+# PDFインデクサー:      https://localhost/api/indexer
 ```
 
 #### システム起動（AKS環境）
@@ -44,8 +48,10 @@
 |---------|-----|
 | ドキュメントビューア（HTTP） | http://localhost:8090/api/specs |
 | バックエンド API（HTTP） | http://localhost:8090/swagger/docs |
+| PDFインデクサー（HTTP） | http://localhost:8090/api/indexer |
 | ドキュメントビューア（HTTPS） | https://localhost/api/specs |
 | バックエンド API（HTTPS） | https://localhost/swagger/docs |
+| PDFインデクサー（HTTPS） | https://localhost/api/indexer |
 
 #### GitHub Actions Runner起動
 
@@ -144,12 +150,24 @@ docker compose up -d
 
 ### メンテナンス
 
-#### PDFドキュメントの追加
+#### PDFドキュメントのインデックス化
 
 ```bash
-curl -X POST https://localhost/api/v1/documents \
-  -F "file=@/path/to/document.pdf"
+# WebUIから実行
+# http://localhost:8000/api/indexer
+
+# APIから直接実行
+curl -X POST http://localhost:8000/api/pdf/index \
+  -H "Content-Type: application/json" \
+  -d '{"filename": "対象ファイル名.pdf"}'
 ```
+
+#### PDFファイルの追加手順
+
+1. `src/backend/data/` に対象PDFを配置
+2. compose環境: `docker compose restart backend`
+3. minikube環境: `./rebuild_minikube.sh`
+4. WebUI（/api/indexer）からインデックス化を実行
 
 #### システムの停止
 

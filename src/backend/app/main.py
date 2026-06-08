@@ -42,8 +42,13 @@ class IndexRequest(BaseModel):
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
-    # フェーズ2時点ではモック（オウム返し）を返す
-    return {"answer": f"受信しました: {request.message}"}
+    """RAG+Geminiで回答生成"""
+    from app.rag import answer_with_rag
+    try:
+        answer = answer_with_rag(request.message)
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"回答生成に失敗しました: {str(e)}")
 
 
 @app.get("/api/pdf/list")
@@ -85,7 +90,7 @@ async def index_pdf(request: IndexRequest):
 # 1. HTMLテンプレートを置くディレクトリを指定
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# /app/app/static/favicon.ico を作る。
+# favicon
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse(os.path.join(BASE_DIR, "static", "favicon.ico"))
@@ -97,7 +102,7 @@ app.mount("/api/docs", StaticFiles(directory=os.path.join(BASE_DIR, "docs")), na
 if os.path.exists(os.path.join(BASE_DIR, "README.md")):
     app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
 
-# 4. http://localhost:8000/api/specs にアクセスしたときの処理
+# 4. ドキュメントビューア
 @app.get("/api/specs", response_class=HTMLResponse)
 async def read_specs(request: Request):
     print(f"BASE_DIR : {BASE_DIR}")

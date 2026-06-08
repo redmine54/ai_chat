@@ -1,5 +1,5 @@
 # UI Design
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-08</div>
 
 ## UI設計
 
@@ -8,10 +8,10 @@
 | 画面ID | 画面名 | URL | 概要 |
 |--------|--------|-----|------|
 | SCR-001 | チャット画面 | / | メインのチャットインターフェース |
-| SCR-002 | ドキュメント管理画面 | /admin | PDFのアップロード・削除 |
+| SCR-002 | PDFインデクサー画面 | /api/indexer | PDFのインデックス化・登録 |
 | SCR-003 | 設定画面 | /settings | ユーザー設定 |
-| SCR-004 | ドキュメントビューア | /specs | プロジェクトドキュメント表示 |
-| SCR-005 | APIドキュメント | /docs | Swagger UI |
+| SCR-004 | ドキュメントビューア | /api/specs | プロジェクトドキュメント表示 |
+| SCR-005 | APIドキュメント | /swagger/docs | Swagger UI |
 
 ---
 
@@ -44,25 +44,38 @@ graph TD
 
 ---
 
-### SCR-002: ドキュメント管理画面
+### SCR-002: PDFインデクサー画面（/api/indexer）
 
 ```mermaid
 graph TD
-    subgraph SCR002[ドキュメント管理画面]
-        Upload[PDFをアップロードボタン]
-        subgraph List[登録済みドキュメント一覧]
-            Doc1[📄 manual.pdf　　削除ボタン]
-            Doc2[📄 規程集.pdf　　削除ボタン]
-            Doc3[📄 仕様書.pdf　　削除ボタン]
+    subgraph SCR002[PDFインデクサー画面]
+        Header2[ヘッダー: PDFインデクサー\ndata/配下のPDFをChromaDBにインデックス化]
+        subgraph FileList[対象PDFファイル一覧]
+            Reload[一覧を更新ボタン]
+            PDF1[📄 業務委託契約書.pdf　　インデックス化ボタン　ステータスバッジ]
+            PDF2[📄 社内規程.pdf　　　　　インデックス化ボタン　ステータスバッジ]
+        end
+        subgraph Log[実行ログ]
+            LogArea[処理結果がリアルタイムで表示される]
         end
     end
 
-    Upload --> List
+    Header2 --> FileList
+    FileList --> Log
 ```
+
+**UI要素:**
+
+| 要素 | 仕様 |
+|------|------|
+| PDFファイル一覧 | GET /api/pdf/listで取得・一覧を更新ボタンで再取得 |
+| インデックス化ボタン | クリックでPOST /api/pdf/indexを実行 |
+| ステータスバッジ | 処理中・完了（チャンク数）・エラーを色付きで表示 |
+| 実行ログ | 処理開始・完了・エラーをリアルタイムで表示 |
 
 ---
 
-### SCR-004: ドキュメントビューア（/specs）
+### SCR-004: ドキュメントビューア（/api/specs）
 
 ```mermaid
 graph LR
@@ -95,7 +108,6 @@ graph LR
 | 項目 | 仕様 |
 |------|------|
 | フォント | Noto Sans JP（日本語対応） |
-| カラー | プライマリ: #1976D2、背景: #F5F5F5 |
-| ドキュメントビューア | ダークテーマ（背景: #0f1117） |
+| カラー | プライマリ: #8fa89b（Muted Green）、背景: #faf8f5 |
 | レスポンシブ | PC・タブレット対応 |
 | 言語 | 日本語 |
