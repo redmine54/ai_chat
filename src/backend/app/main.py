@@ -24,10 +24,41 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 
 app = FastAPI(
-    docs_url="/swagger/docs",
+    docs_url=None,
     redoc_url="/swagger/redoc",
     openapi_url="/swagger/openapi.json"
 )
+
+@app.get("/swagger/docs", include_in_schema=False)
+async def custom_swagger_ui():
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse("""<!DOCTYPE html>
+<html>
+<head>
+  <title>Swagger UI</title>
+  <meta charset="utf-8"/>
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
+</head>
+<body>
+  <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;">
+    <span style="color:#aaa;font-size:13px;margin-right:8px;">🔗 メニュー:</span>
+    <a href="/api/chat/ui" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">💬 チャット</a>
+    <a href="/api/indexer" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📄 PDFインデクサー</a>
+    <a href="/api/specs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📚 ドキュメント</a>
+    <a href="/swagger/docs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🔧 API</a>
+  </nav>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: "/swagger/openapi.json",
+      dom_id: '#swagger-ui',
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      layout: "BaseLayout"
+    })
+  </script>
+</body>
+</html>""")
 
 app.add_middleware(NoCacheMiddleware)
 
