@@ -4,7 +4,7 @@ import re
 import time
 #import google.generativeai as genai
 import google.genai as genai   # ← これが正しい
-from chromadb import PersistentClient
+import chromadb
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
@@ -16,7 +16,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # モデル名（v1 形式）
 # -----------------------------
 EMBEDDING_MODEL = "models/gemini-embedding-2"
-GENERATION_MODEL = "models/gemini-1.5-flash"
+GENERATION_MODEL = "models/gemini-2.0-flash"
 
 def debug_list_models():
     print("---- 利用可能なモデル一覧 ----")
@@ -32,7 +32,10 @@ debug_list_models()
 # -----------------------------
 # ChromaDB 初期化
 # -----------------------------
-chroma_client = PersistentClient(path="/app/chroma")
+chroma_client = chromadb.HttpClient(
+    host=os.getenv("CHROMA_HOST", "vectordb"),
+    port=int(os.getenv("CHROMA_PORT", 8000))
+)
 collection = chroma_client.get_or_create_collection(name="pdf_documents")
 
 # -----------------------------
@@ -177,6 +180,6 @@ def answer_with_rag(user_query: str) -> str:
 
     response = client.models.generate_content(
         model=GENERATION_MODEL,
-        text=prompt
+        contents=prompt
     )
     return response.text

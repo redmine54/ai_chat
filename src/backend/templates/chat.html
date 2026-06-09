@@ -281,7 +281,7 @@
       <div class="input-wrapper">
         <textarea
           id="messageInput"
-          placeholder="質問を入力してください... （Shift+Enterで改行）"
+          placeholder="質問を入力してください... （Enterで改行、送信ボタンで送信）"
           rows="1"
         ></textarea>
       </div>
@@ -302,13 +302,8 @@
         messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
       });
 
-      // Enterで送信（Shift+Enterは改行）
-      messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage();
-        }
-      });
+      // 送信ボタンのみ送信（Enter・Shift+Enterは改行）
+      // キーボードでは送信しない
 
       function addMessage(text, role) {
         // ウェルカムメッセージを非表示
