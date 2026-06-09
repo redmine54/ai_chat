@@ -26,11 +26,11 @@
 
 | ID | 要件 |
 |----|------|
-| FR-003-1 | 質問に関連するドキュメントをGemini text-embedding-004でベクトル検索する（TOP_K=5） |
+| FR-003-1 | 質問に関連するドキュメントをGemini gemini-embedding-2でベクトル検索する（TOP_K=5） |
 | FR-003-2 | 取得したドキュメントをコンテキストとしてLLMに送信する |
 | FR-003-3 | LLMが生成した回答をユーザーに返却する |
-| FR-003-4 | LLMはGoogle Gemini API（gemini-1.5-flash）を使用する |
-| FR-003-5 | PDFの埋め込みモデルはGemini text-embedding-004を使用する |
+| FR-003-4 | LLMはGoogle Gemini API（gemini-2.0-flash）を使用する |
+| FR-003-5 | PDFの埋め込みモデルはGemini gemini-embedding-2を使用する |
 
 ### FR-004: セキュリティ機能
 

@@ -11,11 +11,11 @@ sequenceDiagram
     participant UI as チャット画面\n/
     participant BE as Backend\nFastAPI
     participant DB as ChromaDB
-    participant LLM as Gemini API\ngemini-1.5-flash
+    participant LLM as Gemini API\ngemini-2.0-flash
 
     User->>UI: 質問入力・送信
     UI->>BE: POST /api/chat\n{message: "..."}
-    BE->>BE: text-embedding-004で\nクエリをベクトル化
+    BE->>BE: gemini-embedding-2で\nクエリをベクトル化
     BE->>DB: query_embeddings\nn_results=5
     DB-->>BE: 関連ドキュメント（TOP5）
     BE->>LLM: プロンプト生成・送信\n（参考資料+質問）
@@ -33,7 +33,7 @@ sequenceDiagram
     actor Admin as 管理者
     participant UI as インデクサーWebUI\n/api/indexer
     participant BE as Backend
-    participant Gemini as Gemini API\ntext-embedding-004
+    participant Gemini as Gemini API\ngemini-embedding-2
     participant DB as ChromaDB
 
     Admin->>UI: ブラウザでアクセス

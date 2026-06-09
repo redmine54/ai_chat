@@ -11,7 +11,7 @@ API名: ai_chat Backend API
 
 ## 1. 概要（Overview）
 
-ai_chatバックエンドのREST API仕様を定義する。FastAPIで実装されており、Swagger UIは`/swagger/docs`で参照可能。LLMはGoogle Gemini API（gemini-1.5-flash）、埋め込みモデルはtext-embedding-004を使用する。
+ai_chatバックエンドのREST API仕様を定義する。FastAPIで実装されており、Swagger UIは`/swagger/docs`で参照可能。LLMはGoogle Gemini API（gemini-2.0-flash）、埋め込みモデルはgemini-embedding-2を使用する。
 
 ---
 
@@ -24,7 +24,7 @@ ai_chatバックエンドのREST API仕様を定義する。FastAPIで実装さ�
 | 3 | ドキュメントビューア | GET | /api/specs | プロジェクトドキュメント表示 |
 | 4 | APIドキュメント | GET | /swagger/docs | Swagger UI |
 | 5 | PDFファイル一覧 | GET | /api/pdf/list | data/配下のPDFファイル一覧取得 |
-| 6 | PDFインデックス化 | POST | /api/pdf/index | 指定PDFをGemini text-embedding-004でChromaDBにインデックス化 |
+| 6 | PDFインデックス化 | POST | /api/pdf/index | 指定PDFをGemini gemini-embedding-2でChromaDBにインデックス化 |
 | 7 | PDFインデクサー画面 | GET | /api/indexer | PDFインデクサーWebUI表示 |
 
 ---
@@ -40,7 +40,7 @@ ai_chatバックエンドのREST API仕様を定義する。FastAPIで実装さ�
 
 ### 4.1 POST /api/chat
 
-**概要:** ユーザーの質問を受け取り、Gemini text-embedding-004でベクトル検索しgemini-1.5-flashで回答を生成して返却する。
+**概要:** ユーザーの質問を受け取り、Gemini gemini-embedding-2でベクトル検索しgemini-2.0-flashで回答を生成して返却する。
 
 **Request Body:**
 ```json
@@ -106,7 +106,7 @@ ai_chatバックエンドのREST API仕様を定義する。FastAPIで実装さ�
 
 ### 4.4 POST /api/pdf/index
 
-**概要:** 指定したPDFファイルをテキスト抽出・チャンク分割・Gemini text-embedding-004でベクトル化してChromaDBに登録する。
+**概要:** 指定したPDFファイルをテキスト抽出・チャンク分割・Gemini gemini-embedding-2でベクトル化してChromaDBに登録する。
 
 **Request Body:**
 ```json

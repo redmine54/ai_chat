@@ -16,7 +16,7 @@ FastAPI + ChromaDB + Claude API（Anthropic）によるRAGアーキテクチャ�
 |---------|------|
 | フロントエンド | Nginx（静的ファイル配信） |
 | バックエンド | FastAPI（Python 3.12） |
-| LLM | Claude API（claude-3-5-sonnet） |
+| LLM | Gemini API（gemini-2.0-flash） |
 | ベクトルDB | ChromaDB |
 | コンテナオーケストレーション | Kubernetes（Minikube / AKS） |
 | サービスメッシュ | Istio（mTLS） |
@@ -170,8 +170,8 @@ cd actions-runner
 | サービス | URL |
 |---------|-----|
 | フロントエンド | http://localhost:80 |
-| バックエンド API（Swagger） | http://localhost:8000/swagger/docs |
-| ドキュメントビューア | http://localhost:8000/api/specs |
+| バックエンド API（Swagger） | http://localhost:8000/api/chat/uiswagger/docs |
+| ドキュメントビューア | http://localhost:8000/api/chat/uiapi/specs |
 | ChromaDB | http://localhost:8001 |
 
 ---
@@ -222,7 +222,7 @@ cd actions-runner
 ### チャットAPIリクエスト例
 
 ```bash
-curl -X POST http://localhost:8000/api/chat \
+curl -X POST http://localhost:8000/api/chat/uiapi/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "契約期間はいつまでですか？"}'
 ```
@@ -324,12 +324,16 @@ git push origin v0.1.0
 
 | カテゴリ | パス |
 |---------|------|
+| 概要 | [docs/overview/](docs/overview/) |
 | 要件定義 | [docs/requirements/](docs/requirements/) |
 | 設計書 | [docs/design/](docs/design/) |
 | 仕様書 | [docs/specifications/](docs/specifications/) |
+| データ設計 | [docs/data/](docs/data/) |
 | 運用ドキュメント | [docs/operations/](docs/operations/) |
+| テスト | [docs/testing/](docs/testing/) |
+| 開発環境設計規定 | [docs/開発環境/](docs/開発環境/) |
 
-ドキュメントビューア（起動後）: `http://localhost:8000/api/specs`
+ドキュメントビューア（起動後）: `http://localhost:8000/api/chat/uiapi/specs`
 
 ---
 
