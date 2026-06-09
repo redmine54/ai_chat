@@ -7,30 +7,33 @@
 
 | 画面ID | 画面名 | URL | 概要 |
 |--------|--------|-----|------|
-| SCR-001 | チャット画面 | / | メインのチャットインターフェース |
+| SCR-001 | チャット画面 | / または /api/chat/ui | RAG+Geminiチャットインターフェース |
 | SCR-002 | PDFインデクサー画面 | /api/indexer | PDFのインデックス化・登録 |
-| SCR-003 | 設定画面 | /settings | ユーザー設定 |
+| SCR-003 | 設定画面 | /settings | ユーザー設定（予定） |
 | SCR-004 | ドキュメントビューア | /api/specs | プロジェクトドキュメント表示 |
 | SCR-005 | APIドキュメント | /swagger/docs | Swagger UI |
 
 ---
 
-### SCR-001: チャット画面
+### SCR-001: チャット画面（/）
 
 ```mermaid
 graph TD
     subgraph SCR001[チャット画面]
-        Header[ヘッダー: ai_chat　　　　　　設定ボタン]
+        Header[ヘッダー: ai_chat　　PDFインデクサーボタン　ドキュメントボタン]
         subgraph History[チャット履歴エリア スクロール可能]
-            AI1[AI: こんにちは！何でも聞いてください。]
-            User1[ユーザー: 〇〇について教えてください]
-            AI2[AI: 〇〇については...\n参照: document.pdf p.3]
+            Welcome[ウェルカムメッセージ\nこんにちは！何でも聞いてください。]
+            AI1[AIバブル: Geminiが生成した回答]
+            User1[ユーザーバブル: 入力した質問]
         end
-        Input[質問を入力...　　　　　　　　　　送信ボタン]
+        subgraph InputArea[入力エリア]
+            Input[テキストエリア: Shift+Enterで改行・Enterで送信]
+            SendBtn[送信ボタン]
+        end
     end
 
     Header --> History
-    History --> Input
+    History --> InputArea
 ```
 
 **UI要素:**
@@ -38,9 +41,12 @@ graph TD
 | 要素 | 仕様 |
 |------|------|
 | チャット履歴 | スクロール可能・最新メッセージを下部に表示 |
-| 入力フォーム | 複数行入力対応・Enterで送信 |
-| 送信ボタン | 入力中はローディング表示 |
-| 参照ドキュメント | クリックでドキュメント名・ページ数を表示 |
+| AIバブル | 左側表示・ロボットアイコン付き |
+| ユーザーバブル | 右側表示・アクセントカラー背景 |
+| ローディング | 3点ドットのバウンスアニメーション |
+| 入力フォーム | 複数行入力対応・Enterで送信・Shift+Enterで改行 |
+| 送信ボタン | 送信中は無効化 |
+| ヘッダーリンク | PDFインデクサー・ドキュメントビューアへのナビゲーション |
 
 ---
 
@@ -53,7 +59,6 @@ graph TD
         subgraph FileList[対象PDFファイル一覧]
             Reload[一覧を更新ボタン]
             PDF1[📄 業務委託契約書.pdf　　インデックス化ボタン　ステータスバッジ]
-            PDF2[📄 社内規程.pdf　　　　　インデックス化ボタン　ステータスバッジ]
         end
         subgraph Log[実行ログ]
             LogArea[処理結果がリアルタイムで表示される]
@@ -107,7 +112,9 @@ graph LR
 
 | 項目 | 仕様 |
 |------|------|
-| フォント | Noto Sans JP（日本語対応） |
+| フォント | -apple-system, BlinkMacSystemFont, Segoe UI（システムフォント） |
 | カラー | プライマリ: #8fa89b（Muted Green）、背景: #faf8f5 |
+| AIバブル | 背景: #f0ede9（サイドバーと同色） |
+| ユーザーバブル | 背景: #8fa89b（アクセントカラー）、文字: 白 |
 | レスポンシブ | PC・タブレット対応 |
 | 言語 | 日本語 |

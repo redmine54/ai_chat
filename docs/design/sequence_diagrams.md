@@ -8,19 +8,20 @@
 ```mermaid
 sequenceDiagram
     actor User as ユーザー
-    participant FE as Frontend
-    participant BE as Backend
+    participant UI as チャット画面\n/
+    participant BE as Backend\nFastAPI
     participant DB as ChromaDB
-    participant LLM as Claude API
+    participant LLM as Gemini API\ngemini-1.5-flash
 
-    User->>FE: 質問入力
-    FE->>BE: POST /api/chat
-    BE->>DB: ベクトル化・類似検索
-    DB-->>BE: 関連ドキュメント
-    BE->>LLM: プロンプト生成・送信
+    User->>UI: 質問入力・送信
+    UI->>BE: POST /api/chat\n{message: "..."}
+    BE->>BE: text-embedding-004で\nクエリをベクトル化
+    BE->>DB: query_embeddings\nn_results=5
+    DB-->>BE: 関連ドキュメント（TOP5）
+    BE->>LLM: プロンプト生成・送信\n（参考資料+質問）
     LLM-->>BE: 回答生成
-    BE-->>FE: 回答
-    FE-->>User: 回答表示
+    BE-->>UI: {"answer": "..."}
+    UI-->>User: AIバブルで回答表示
 ```
 
 ---
@@ -32,6 +33,7 @@ sequenceDiagram
     actor Admin as 管理者
     participant UI as インデクサーWebUI\n/api/indexer
     participant BE as Backend
+    participant Gemini as Gemini API\ntext-embedding-004
     participant DB as ChromaDB
 
     Admin->>UI: ブラウザでアクセス
@@ -43,8 +45,12 @@ sequenceDiagram
     UI->>BE: POST /api/pdf/index\n{filename: "xxx.pdf"}
     BE->>BE: ファイル存在チェック
     BE->>BE: テキスト抽出（PyPDF）
-    BE->>BE: チャンク分割
-    BE->>DB: ベクトル保存（/api/v2）
+    BE->>BE: チャンク分割（500文字）
+    loop チャンクごと
+        BE->>Gemini: embed_content\ntask_type=retrieval_document
+        Gemini-->>BE: embedding vector
+    end
+    BE->>DB: collection.add\n(documents, embeddings, ids)
     DB-->>BE: 保存完了
     BE-->>UI: {status: success, chunks: N}
     UI-->>Admin: 完了ログ表示

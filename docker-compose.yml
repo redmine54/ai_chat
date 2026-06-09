@@ -25,6 +25,8 @@ services:
       - ./docs:/app/docs
       - ./README.md:/app/README.md
       - ./src/backend/templates:/app/templates
+      - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
 
   vectordb:
     image: chromadb/chroma:latest
@@ -37,3 +39,4 @@ services:
 
 volumes:
   chroma-data:
+  chroma-persistent:   # PersistentClient用ボリューム追加

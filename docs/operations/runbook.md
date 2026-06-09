@@ -185,3 +185,12 @@ docker compose down
 # ngrokで外部公開（社内機密に注意）
 ngrok http 8000
 ```
+
+#### チャット画面へのアクセス
+
+| 環境 | URL |
+|---------|-----|
+| compose（HTTP） | http://localhost:8000/ |
+| compose（HTTPS） | https://localhost/ |
+| Minikube（HTTP） | http://localhost:8090/ |
+| Minikube（HTTPS） | https://localhost/ |
