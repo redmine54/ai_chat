@@ -251,7 +251,13 @@
     </style>
   </head>
   <body>
-    <!-- ヘッダー -->
+        <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;">
+      <span style="color:#aaa;font-size:13px;margin-right:8px;">🔗 メニュー:</span>
+      <a href="/api/chat/ui" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">💬 チャット</a>
+      <a href="/api/indexer" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📄 PDFインデクサー</a>
+      <a href="/api/specs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📚 ドキュメント</a>
+      <a href="/swagger/docs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🔧 API</a>
+    </nav>    <!-- ヘッダー -->
     <div class="header">
       <div class="header-title">
         <i class="fa-solid fa-robot"></i>
@@ -281,7 +287,7 @@
       <div class="input-wrapper">
         <textarea
           id="messageInput"
-          placeholder="質問を入力してください... （Shift+Enterで改行）"
+          placeholder="質問を入力してください... （Enterで改行、送信ボタンで送信）"
           rows="1"
         ></textarea>
       </div>
@@ -302,13 +308,8 @@
         messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
       });
 
-      // Enterで送信（Shift+Enterは改行）
-      messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage();
-        }
-      });
+      // 送信ボタンのみ送信（Enter・Shift+Enterは改行）
+      // キーボードでは送信しない
 
       function addMessage(text, role) {
         // ウェルカムメッセージを非表示
