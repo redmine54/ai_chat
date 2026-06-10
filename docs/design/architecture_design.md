@@ -68,8 +68,8 @@ graph TD
 | 項目 | 内容 |
 |------|------|
 | サービス | Google Gemini API |
-| 埋め込みモデル | text-embedding-004 |
-| 生成モデル | gemini-1.5-flash |
+| 埋め込みモデル | gemini-embedding-2 |
+| 生成モデル | gemini-2.0-flash |
 | 役割 | PDFベクトル化・RAG回答生成 |
 | 認証 | GEMINI_API_KEY（環境変数） |
 

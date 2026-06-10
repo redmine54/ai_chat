@@ -65,10 +65,12 @@ app.add_middleware(NoCacheMiddleware)
 
 class ChatRequest(BaseModel):
     message: str
+    model: str = "models/gemini-2.5-flash"
 
 
 class IndexRequest(BaseModel):
     filename: str  # data/配下のファイル名
+    force: bool = False  # 強制再登録フラグ
 
 
 @app.post("/api/chat")
@@ -76,7 +78,7 @@ async def chat_endpoint(request: ChatRequest):
     """RAG+Geminiで回答生成"""
     from app.rag import answer_with_rag
     try:
-        answer = answer_with_rag(request.message)
+        answer = answer_with_rag(request.message, model=request.model)
         return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"回答生成に失敗しました: {str(e)}")
@@ -122,6 +124,80 @@ async def index_pdf(request: IndexRequest):
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # favicon
+
+class DeleteRequest(BaseModel):
+    document_id: str
+
+
+@app.get("/api/pdf/status")
+async def pdf_status(filename: str):
+    """PDFの登録状況・ページ数・チャンク数を返す"""
+    from app.rag import collection
+    from pypdf import PdfReader
+    import os
+
+    pdf_path = os.path.join(DATA_DIR, filename)
+    document_id = Path(filename).stem
+
+    # PDFのページ数・更新日時を取得
+    if not os.path.exists(pdf_path):
+        raise HTTPException(status_code=404, detail=f"ファイルが見つかりません: {filename}")
+
+    try:
+        reader = PdfReader(pdf_path)
+        page_count = len(reader.pages)
+    except Exception:
+        page_count = None
+
+    pdf_mtime = os.path.getmtime(pdf_path)
+
+    # ChromaDBの登録状況を確認
+    existing = collection.get(where={"source": document_id})
+    chunk_count = len(existing["ids"])
+
+    if chunk_count == 0:
+        status = "unregistered"
+        registered_at = None
+    else:
+        # メタデータから登録日時を取得
+        registered_at = None
+        for meta in existing["metadatas"]:
+            if meta.get("registered_at"):
+                registered_at = float(meta["registered_at"])
+                break
+
+        if registered_at and pdf_mtime > registered_at:
+            status = "outdated"
+        else:
+            status = "registered"
+
+    return {
+        "filename": filename,
+        "document_id": document_id,
+        "page_count": page_count,
+        "chunk_count": chunk_count,
+        "status": status,
+        "pdf_mtime": pdf_mtime,
+        "registered_at": registered_at,
+    }
+
+
+@app.delete("/api/pdf/delete")
+async def delete_pdf(request: DeleteRequest):
+    """ChromaDBから指定ドキュメントのデータを削除する"""
+    from app.rag import collection
+
+    existing = collection.get(where={"source": request.document_id})
+    if not existing["ids"]:
+        raise HTTPException(status_code=404, detail=f"登録データが見つかりません: {request.document_id}")
+
+    collection.delete(ids=existing["ids"])
+    return {
+        "status": "success",
+        "document_id": request.document_id,
+        "deleted_chunks": len(existing["ids"])
+    }
+
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse(os.path.join(BASE_DIR, "static", "favicon.ico"))
@@ -143,6 +219,62 @@ async def read_chat(request: Request):
 @app.get("/api/specs", response_class=HTMLResponse)
 async def read_specs(request: Request):
     return templates.TemplateResponse(request, "specs.html")
+
+
+import asyncio
+from fastapi.responses import StreamingResponse
+
+# 実行許可スクリプト一覧（セキュリティのため明示的に許可）
+ALLOWED_SCRIPTS = [
+    "check_chroma.sh",
+    "check_models.sh",
+    "switch_gemini_model.sh",
+    "switch_to_compose.sh",
+    "rebuild_compose.sh",
+    "switch_to_minikube.sh",
+    "minikube_start.sh",
+    "minikube_start_https.sh",
+    "minikube_build.sh",
+    "minikube_build_https.sh",
+    "rebuild_minikube.sh",
+    "switch_to_http.sh",
+    "switch_to_https.sh",
+    "外部公開_compose.sh",
+]
+
+class ShRequest(BaseModel):
+    script: str
+
+@app.post("/api/sh/run")
+async def run_script(request: ShRequest):
+    """シェルスクリプトを実行してログをストリーミング返却する"""
+    if request.script not in ALLOWED_SCRIPTS:
+        raise HTTPException(status_code=403, detail=f"実行が許可されていません: {request.script}")
+
+    script_path = os.path.join(BASE_DIR, "..", request.script)
+    script_path = os.path.abspath(script_path)
+
+    if not os.path.exists(script_path):
+        raise HTTPException(status_code=404, detail=f"スクリプトが見つかりません: {request.script}")
+
+    async def stream_output():
+        proc = await asyncio.create_subprocess_exec(
+            "bash", script_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            cwd=os.path.dirname(script_path)
+        )
+        async for line in proc.stdout:
+            yield line.decode("utf-8", errors="replace")
+        await proc.wait()
+        yield f"\n[終了コード: {proc.returncode}]\n"
+
+    return StreamingResponse(stream_output(), media_type="text/plain")
+
+# ユーティリティ画面
+@app.get("/api/utilities", response_class=HTMLResponse)
+async def read_utilities(request: Request):
+    return templates.TemplateResponse(request, "utilities.html")
 
 # PDFインデクサー画面
 @app.get("/api/indexer", response_class=HTMLResponse)

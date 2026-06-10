@@ -9,12 +9,12 @@
 [PDFファイル]
      ↓
 [テキスト抽出]
-  - PyPDF2でテキスト抽出
+  - pypdfでテキスト抽出
   - ページ単位で処理
      ↓
 [チャンク分割]
   - chunk_size: 500文字
-  - chunk_overlap: 50文字
+  - chunk_overlap: 100文字
      ↓
 [ベクトル化（Embedding）]
   - Embedding Modelでベクトル化

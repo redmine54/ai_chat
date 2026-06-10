@@ -23,6 +23,7 @@ services:
       - vectordb
     volumes:
       - ./docs:/app/docs
+      - ./src/backend/data:/app/data
       - ./README.md:/app/README.md
       - ./src/backend/templates:/app/templates
     #  - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加

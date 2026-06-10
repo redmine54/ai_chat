@@ -5,7 +5,7 @@
 
 ```mermaid
 flowchart TD
-    Chat[チャット画面\n/]
+    Chat[チャット画面\n/api/chat/ui]
     Indexer[PDFインデクサー画面\n/api/indexer]
     Docs[ドキュメントビューア\n/api/specs]
     Swagger[APIドキュメント\n/swagger/docs]
@@ -44,8 +44,8 @@ flowchart TD
 
 | 画面 | URL |
 |------|-----|
-| チャット画面 | http://localhost:8000/ |
-| チャット画面（別名） | http://localhost:8000/api/chat/ui |
-| PDFインデクサー画面 | http://localhost:8000/api/indexer |
-| ドキュメントビューア | http://localhost:8000/api/specs |
-| APIドキュメント | http://localhost:8000/swagger/docs |
+| チャット画面 | http://localhost:8000/api/chat/ui |
+| チャット画面（別名） | http://localhost:8000/api/chat/uiapi/chat/ui |
+| PDFインデクサー画面 | http://localhost:8000/api/chat/uiapi/indexer |
+| ドキュメントビューア | http://localhost:8000/api/chat/uiapi/specs |
+| APIドキュメント | http://localhost:8000/api/chat/uiswagger/docs |

@@ -38,12 +38,12 @@
 
 ### 4.1 チャット処理
 1. ユーザーからの質問を受信（POST /api/chat）
-2. Gemini text-embedding-004でクエリをベクトル化してChromaDBで類似検索
-3. Gemini gemini-1.5-flashで回答を生成・返却
+2. Gemini gemini-embedding-2でクエリをベクトル化してChromaDBで類似検索
+3. Gemini gemini-2.0-flashで回答を生成・返却
 
 ### 4.2 PDFインデックス化処理
 1. data/配下のPDFファイル一覧を取得（GET /api/pdf/list）
-2. 指定PDFをテキスト抽出・チャンク分割・Gemini text-embedding-004でベクトル化してChromaDBに登録（POST /api/pdf/index）
+2. 指定PDFをテキスト抽出・チャンク分割・Gemini gemini-embedding-2でベクトル化してChromaDBに登録（POST /api/pdf/index）
 
 ---
 
@@ -63,8 +63,8 @@
 
 | 用途 | モデル名 | 説明 |
 |------|---------|------|
-| ベクトル化（埋め込み） | text-embedding-004 | PDFチャンク・クエリのベクトル化 |
-| 回答生成 | gemini-1.5-flash | RAGコンテキストを元に回答生成 |
+| ベクトル化（埋め込み） | gemini-embedding-2 | PDFチャンク・クエリのベクトル化 |
+| 回答生成 | gemini-2.0-flash | RAGコンテキストを元に回答生成 |
 
 ---
 
@@ -110,10 +110,10 @@
 | Step | 処理内容 | 条件 | 備考 |
 |------|-----------|--------|--------|
 | 1 | リクエスト受信 | POST /api/chat | Pydanticでバリデーション |
-| 2 | クエリのベクトル化 | 常時 | Gemini text-embedding-004使用 |
+| 2 | クエリのベクトル化 | 常時 | Gemini gemini-embedding-2使用 |
 | 3 | ChromaDB検索 | 常時 | TOP_K=5、コサイン類似度 |
 | 4 | プロンプト生成 | 常時 | コンテキスト+質問を結合 |
-| 5 | Gemini API呼び出し | 常時 | gemini-1.5-flash |
+| 5 | Gemini API呼び出し | 常時 | gemini-2.0-flash |
 | 6 | レスポンス返却 | 常時 | 回答テキスト |
 
 ### 8.2 PDFインデックス化処理ステップ
@@ -124,7 +124,7 @@
 | 2 | 拡張子チェック | 常時 | PDF以外は400を返却 |
 | 3 | テキスト抽出 | 常時 | PyPDFを使用 |
 | 4 | チャンク分割 | 常時 | chunk_size=500, overlap=100 |
-| 5 | Geminiでベクトル化・ChromaDB登録 | 常時 | text-embedding-004使用 |
+| 5 | Geminiでベクトル化・ChromaDB登録 | 常時 | gemini-embedding-2使用 |
 | 6 | チャンク数を返却 | 常時 | 登録件数を返却 |
 
 ### 8.3 擬似コード（Pseudo Code）

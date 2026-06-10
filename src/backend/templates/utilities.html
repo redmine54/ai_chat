@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>shユーティリティ</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    :root { --bg-color:#faf8f5; --text-color:#333; --accent-color:#8fa89b; --accent-hover:#768e82; --border-color:#d1cbc4; --white:#fff; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; color:var(--text-color); background:var(--bg-color); }
+    h1 { font-size:20px; margin-bottom:8px; border-bottom:2px solid var(--accent-color); padding-bottom:10px; }
+    .subtitle { color:#777; margin-bottom:30px; font-size:13px; }
+    .content { padding:40px; max-width:960px; }
+    .section { margin-bottom:32px; }
+    .section-title { font-size:15px; font-weight:bold; margin-bottom:12px; padding:6px 12px; background:var(--accent-color); color:#fff; border-radius:4px; display:flex; align-items:center; gap:8px; }
+    .terminal-note { font-size:12px; color:#777; margin-bottom:10px; padding:6px 10px; background:#f0ede9; border-radius:4px; border-left:3px solid var(--accent-color); }
+    table { width:100%; border-collapse:collapse; background:var(--white); border:1px solid var(--border-color); border-radius:6px; overflow:hidden; margin-bottom:8px; }
+    th { background:#f0ede9; padding:10px 14px; text-align:left; font-size:13px; border-bottom:1px solid var(--border-color); }
+    td { padding:10px 14px; border-bottom:1px solid var(--border-color); font-size:13px; vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    .script-name { font-family:monospace; font-size:12px; background:#f0ede9; padding:2px 8px; border-radius:3px; color:#555; }
+    .btn-copy { padding:5px 12px; background:#5c7a70; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; white-space:nowrap; }
+    .btn-copy:hover { background:#4a6560; }
+    .btn-copy.copied { background:#4caf50; }
+    /* トースト通知 */
+    #toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 24px; border-radius:20px; font-size:13px; opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:9999; }
+    #toast.show { opacity:1; }
+  </style>
+</head>
+<body>
+  <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <span style="color:#aaa;font-size:13px;margin-right:8px;">🔗 メニュー:</span>
+    <a href="/api/chat/ui" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">💬 チャット</a>
+    <a href="/api/indexer" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📄 PDFインデクサー</a>
+    <a href="/api/specs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📚 ドキュメント</a>
+    <a href="/swagger/docs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🔧 API</a>
+    <a href="/api/utilities" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🛠️ shユーティリティ</a>
+  </nav>
+
+  <div class="content">
+    <h1><i class="fa-solid fa-terminal"></i> shユーティリティ</h1>
+    <p class="subtitle">コピーボタンでコマンドをクリップボードにコピーし、ターミナルに貼り付けて実行してください</p>
+
+    <!-- 確認系 -->
+    <div class="section">
+      <div class="section-title"><i class="fa-solid fa-magnifying-glass"></i> 確認系</div>
+      <p class="terminal-note"><i class="fa-solid fa-terminal"></i> プロジェクトルートのターミナルで実行してください</p>
+      <table>
+        <tr><th>スクリプト</th><th>機能</th><th>コマンド</th></tr>
+        <tr><td><span class="script-name">check_chroma.sh</span></td><td>ChromaDBの保存状況を確認する（コレクション・ドキュメント名・チャンク数）</td><td><button class="btn-copy" data-cmd="./check_chroma.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">check_models.sh</span></td><td>Gemini APIで利用可能なモデル一覧を表示する</td><td><button class="btn-copy" data-cmd="./check_models.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+      </table>
+    </div>
+
+    <!-- Geminiモデル管理 -->
+    <div class="section">
+      <div class="section-title"><i class="fa-solid fa-microchip"></i> Geminiモデル管理</div>
+      <p class="terminal-note"><i class="fa-solid fa-terminal"></i> プロジェクトルートのターミナルで実行してください</p>
+      <table>
+        <tr><th>スクリプト</th><th>機能</th><th>コマンド</th></tr>
+        <tr><td><span class="script-name">switch_gemini_model.sh</span></td><td>Gemini生成モデルを切り替える（クォータ状態を確認してから選択）</td><td><button class="btn-copy" data-cmd="./switch_gemini_model.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+      </table>
+    </div>
+
+    <!-- Docker Compose環境 -->
+    <div class="section">
+      <div class="section-title"><i class="fa-brands fa-docker"></i> Docker Compose環境</div>
+      <p class="terminal-note"><i class="fa-solid fa-terminal"></i> プロジェクトルートのターミナルで実行してください</p>
+      <table>
+        <tr><th>スクリプト</th><th>機能</th><th>コマンド</th></tr>
+        <tr><td><span class="script-name">switch_to_compose.sh</span></td><td>Minikubeを停止してdocker compose環境に切り替えて起動する</td><td><button class="btn-copy" data-cmd="./switch_to_compose.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">rebuild_compose.sh</span></td><td>docker compose環境でバックエンドを再ビルドして起動する</td><td><button class="btn-copy" data-cmd="./rebuild_compose.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">外部公開_compose.sh</span></td><td>ngrokでcompose環境を一時的に外部公開する（デモ用）</td><td><button class="btn-copy" data-cmd="./外部公開_compose.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+      </table>
+    </div>
+
+    <!-- Minikube環境 -->
+    <div class="section">
+      <div class="section-title"><i class="fa-solid fa-ship"></i> Minikube環境</div>
+      <p class="terminal-note"><i class="fa-solid fa-terminal"></i> プロジェクトルートのターミナルで実行してください</p>
+      <table>
+        <tr><th>スクリプト</th><th>機能</th><th>コマンド</th></tr>
+        <tr><td><span class="script-name">switch_to_minikube.sh</span></td><td>docker composeを停止してMinikube環境に切り替えて起動する</td><td><button class="btn-copy" data-cmd="./switch_to_minikube.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">minikube_start.sh</span></td><td>MinikubeをHTTPモードで起動する</td><td><button class="btn-copy" data-cmd="./minikube_start.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">minikube_start_https.sh</span></td><td>MinikubeをHTTPSモードで起動する</td><td><button class="btn-copy" data-cmd="./minikube_start_https.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">minikube_build.sh</span></td><td>Minikube環境でDockerイメージを再ビルドして再デプロイする</td><td><button class="btn-copy" data-cmd="./minikube_build.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">minikube_build_https.sh</span></td><td>Minikube環境でHTTPS対応イメージを再ビルドして再デプロイする</td><td><button class="btn-copy" data-cmd="./minikube_build_https.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">rebuild_minikube.sh</span></td><td>Minikube環境でバックエンドを再ビルドして再起動する</td><td><button class="btn-copy" data-cmd="./rebuild_minikube.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+      </table>
+    </div>
+
+    <!-- アクセスモード切り替え -->
+    <div class="section">
+      <div class="section-title"><i class="fa-solid fa-right-left"></i> アクセスモード切り替え</div>
+      <p class="terminal-note"><i class="fa-solid fa-terminal"></i> プロジェクトルートのターミナルで実行してください</p>
+      <table>
+        <tr><th>スクリプト</th><th>機能</th><th>コマンド</th></tr>
+        <tr><td><span class="script-name">switch_to_http.sh</span></td><td>Minikube環境でHTTPアクセス用にport-forwardを設定する</td><td><button class="btn-copy" data-cmd="./switch_to_http.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">switch_to_https.sh</span></td><td>Minikube環境でHTTPSアクセスを有効にする</td><td><button class="btn-copy" data-cmd="./switch_to_https.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+      </table>
+    </div>
+
+    <!-- セキュリティ -->
+    <div class="section">
+      <div class="section-title"><i class="fa-solid fa-lock"></i> セキュリティ</div>
+      <p class="terminal-note"><i class="fa-solid fa-terminal"></i> プロジェクトルートのターミナルで実行してください</p>
+      <table>
+        <tr><th>スクリプト</th><th>機能</th><th>コマンド</th></tr>
+        <tr><td><span class="script-name">create_gatewaykey.sh</span></td><td>Istio Gateway用の自己署名TLS証明書を作成してK8s Secretに登録する</td><td><button class="btn-copy" data-cmd="./create_gatewaykey.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">install_Istio_on_m1.sh</span></td><td>Mac M1のMinikube環境にIstioをインストールする</td><td><button class="btn-copy" data-cmd="./install_Istio_on_m1.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+      </table>
+    </div>
+
+    <!-- ドキュメント管理 -->
+    <div class="section">
+      <div class="section-title"><i class="fa-solid fa-file-lines"></i> ドキュメント管理</div>
+      <p class="terminal-note"><i class="fa-solid fa-terminal"></i> プロジェクトルートのターミナルで実行してください</p>
+      <table>
+        <tr><th>スクリプト</th><th>機能</th><th>コマンド</th></tr>
+        <tr><td><span class="script-name">docs_setup.sh</span></td><td>docsディレクトリ構造を初期作成する</td><td><button class="btn-copy" data-cmd="./docs_setup.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">copy_docs.sh</span></td><td>Downloadsフォルダからdocsフォルダへmdファイルをコピーする</td><td><button class="btn-copy" data-cmd="./copy_docs.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">overwrite_md_files.sh</span></td><td>Downloadsフォルダからdocsフォルダへmdファイルを上書きコピーする</td><td><button class="btn-copy" data-cmd="./overwrite_md_files.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">generate_api_spec.sh</span></td><td>API仕様書を自動生成する</td><td><button class="btn-copy" data-cmd="./generate_api_spec.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">generate_program_spec.sh</span></td><td>プログラム仕様書を自動生成する</td><td><button class="btn-copy" data-cmd="./generate_program_spec.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">generate_REAADME_index.sh</span></td><td>docsのREADMEインデックスを自動生成する</td><td><button class="btn-copy" data-cmd="./generate_REAADME_index.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+        <tr><td><span class="script-name">generate_repositories.sh</span></td><td>GitHubリポジトリのディレクトリ構造を生成する</td><td><button class="btn-copy" data-cmd="./generate_repositories.sh"><i class="fa-solid fa-copy"></i> コピー</button></td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast">📋 コマンドをコピーしました</div>
+
+  <script>
+    function showToast() {
+      var toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 2000);
+    }
+
+    document.querySelectorAll('.btn-copy').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var cmd = btn.getAttribute('data-cmd');
+        navigator.clipboard.writeText(cmd).then(function() {
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> コピー済';
+          btn.classList.add('copied');
+          showToast();
+          setTimeout(function() {
+            btn.innerHTML = '<i class="fa-solid fa-copy"></i> コピー';
+            btn.classList.remove('copied');
+          }, 2000);
+        }).catch(function() {
+          // フォールバック
+          var ta = document.createElement('textarea');
+          ta.value = cmd;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast();
+        });
+      });
+    });
+  </script>
+</body>
+</html>

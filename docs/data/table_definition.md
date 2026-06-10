@@ -9,7 +9,7 @@
 
 ```python
 collection = client.create_collection(
-    name="documents",
+    name="pdf_documents",
     metadata={"hnsw:space": "cosine"}
 )
 ```
@@ -36,7 +36,7 @@ collection = client.create_collection(
 |--------|------------|------|
 | CHROMA_HOST | vectordb | ChromaDBのホスト名 |
 | CHROMA_PORT | 8000 | ChromaDBのポート番号 |
-| COLLECTION_NAME | documents | ChromaDBのコレクション名 |
+| COLLECTION_NAME | pdf_documents | ChromaDBのコレクション名 |
 | CHUNK_SIZE | 500 | チャンクサイズ（文字数） |
 | CHUNK_OVERLAP | 50 | チャンクオーバーラップ（文字数） |
 | TOP_K | 5 | 検索結果の最大取得件数 |
