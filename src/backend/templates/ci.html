@@ -112,7 +112,7 @@
     }
 
     function conclusionIcon(conclusion, status) {
-      if (status === 'in_progress') return '<i class="fa-solid fa-spinner fa-spin" style="color:#1565c0"></i>';
+      if (status === 'in_progress' || status === 'queued') return '<i class="fa-solid fa-spinner fa-spin" style="color:#1565c0"></i>';
       switch(conclusion) {
         case 'success':   return '<i class="fa-solid fa-circle-check" style="color:#2e7d32"></i>';
         case 'failure':   return '<i class="fa-solid fa-circle-xmark" style="color:#c62828"></i>';
@@ -123,6 +123,7 @@
     }
 
     function conclusionBadge(conclusion, status) {
+      if (status === 'queued') return '<span class="run-badge badge-running"><i class="fa-solid fa-clock"></i> 待機中</span>';
       if (status === 'in_progress') return '<span class="run-badge badge-running"><i class="fa-solid fa-spinner fa-spin"></i> 実行中</span>';
       switch(conclusion) {
         case 'success':   return '<span class="run-badge badge-success">✅ SUCCESS</span>';
@@ -329,7 +330,7 @@
         if (!res.ok) throw new Error(d.detail);
         if (!d.runs.length) { list.innerHTML = '<div class="loading">CI実行履歴がありません</div>'; return; }
 
-        var hasInProgress = d.runs.some(function(r) { return r.status === 'in_progress'; });
+        var hasInProgress = d.runs.some(function(r) { return r.status === 'in_progress' || r.status === 'queued'; });
 
         // 既存カードがあれば差分更新、なければ全再描画
         var existingCards = list.querySelectorAll('.run-card');
@@ -337,7 +338,7 @@
           // 全再描画
           list.innerHTML = '';
           d.runs.forEach(function(run) {
-            var isInProgress = run.status === 'in_progress';
+            var isInProgress = run.status === 'in_progress' || run.status === 'queued';
             var isOpen = openDetails[run.id] || isInProgress;
             var card = document.createElement('div');
             card.className = 'run-card';
@@ -370,7 +371,7 @@
             var existingCard = document.getElementById('runcard-' + run.id);
             if (!existingCard) {
               // 新規runを先頭に挿入
-              var isInProgress = run.status === 'in_progress';
+              var isInProgress = run.status === 'in_progress' || run.status === 'queued';
               var isOpen = isInProgress;
               var card = document.createElement('div');
               card.className = 'run-card';
@@ -400,7 +401,7 @@
               if (iconEl) iconEl.innerHTML = conclusionIcon(run.conclusion, run.status);
               if (badgeEl) badgeEl.innerHTML = conclusionBadge(run.conclusion, run.status);
 
-              var isInProgress = run.status === 'in_progress';
+              var isInProgress = run.status === 'in_progress' || run.status === 'queued';
               var detailEl = document.getElementById('detail-' + run.id);
               if (detailEl && detailEl.classList.contains('open')) {
                 if (detailEl.children.length === 0) {
