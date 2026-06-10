@@ -354,28 +354,40 @@ async def get_ci_jobs(run_id: int):
 @app.get("/api/ci/runs/{run_id}/logs/{job_id}")
 async def get_ci_logs(run_id: int, job_id: int):
     """指定したジョブのログを取得する"""
+    import urllib.parse
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:
         raise HTTPException(status_code=401, detail="GITHUB_TOKENが設定されていません")
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/jobs/{job_id}/logs"
-    req = urllib.request.Request(url, headers={
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {token}",
-        "User-Agent": "aichat-ci-viewer",
-    })
+
+    # リダイレクトを手動で追いかける
+    opener = urllib.request.OpenerDirector()
+    opener.addhandlers = []
+
     try:
-        with urllib.request.urlopen(req, timeout=10) as res:
+        # まずGitHub APIにリクエスト（リダイレクトを自動追跡）
+        import http.client
+        import ssl
+
+        ctx = ssl.create_default_context()
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "aichat-ci-viewer",
+        }
+
+        # urllib でリダイレクトを追跡するカスタムハンドラー
+        class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                # リダイレクト先にはAuthorizationヘッダーを付けない（Azure Blob Storage）
+                return urllib.request.Request(newurl, headers={"User-Agent": "aichat-ci-viewer"})
+
+        opener = urllib.request.build_opener(NoRedirectHandler())
+        req = urllib.request.Request(url, headers=headers)
+        with opener.open(req, timeout=15) as res:
             logs = res.read().decode("utf-8", errors="replace")
-        return {"logs": logs[:50000]}  # 最大50000文字
-    except urllib.error.HTTPError as e:
-        if e.code == 302:
-            # リダイレクト先のURLからログを取得
-            location = e.headers.get("Location")
-            if location:
-                req2 = urllib.request.Request(location, headers={"User-Agent": "aichat-ci-viewer"})
-                with urllib.request.urlopen(req2, timeout=10) as res2:
-                    logs = res2.read().decode("utf-8", errors="replace")
-                return {"logs": logs[:50000]}
+        return {"logs": logs[:50000]}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"ログ取得失敗: {str(e)}")
 
 # CI結果画面

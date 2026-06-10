@@ -299,7 +299,10 @@
       if (!previewEl) return;
       try {
         var res = await fetch('/api/ci/runs/' + runId + '/logs/' + jobId);
-        if (!res.ok) { previewEl.innerHTML = '<span style="color:#888">ログ: GITHUB_TOKENを.envに設定してください</span>'; return; }
+        if (!res.ok) {
+          previewEl.innerHTML = '<span style="color:#888">ログ準備中...</span>';
+          return;
+        }
         var d = await res.json();
         var lines = d.logs.split('\n').filter(function(l) { return l.trim(); });
         var last10 = lines.slice(-10).join('\n');
@@ -362,20 +365,49 @@
             }
           });
         } else {
-          // 差分更新: アイコン・バッジのみ更新、ジョブ詳細は差分更新
+          // 差分更新: 新規runは先頭に追加、既存runはアイコン・バッジのみ更新
           d.runs.forEach(function(run) {
-            var iconEl = document.getElementById('runicon-' + run.id);
-            var badgeEl = document.getElementById('runbadge-' + run.id);
-            if (iconEl) iconEl.innerHTML = conclusionIcon(run.conclusion, run.status);
-            if (badgeEl) badgeEl.innerHTML = conclusionBadge(run.conclusion, run.status);
+            var existingCard = document.getElementById('runcard-' + run.id);
+            if (!existingCard) {
+              // 新規runを先頭に挿入
+              var isInProgress = run.status === 'in_progress';
+              var isOpen = isInProgress;
+              var card = document.createElement('div');
+              card.className = 'run-card';
+              card.id = 'runcard-' + run.id;
+              card.innerHTML =
+                '<div class="run-header" onclick="toggleDetail(' + run.id + ')">' +
+                  '<span class="run-status-icon" id="runicon-' + run.id + '">' + conclusionIcon(run.conclusion, run.status) + '</span>' +
+                  '<div class="run-info">' +
+                    '<div class="run-title">' + escHtml(run.commit_msg || run.name) + '</div>' +
+                    '<div class="run-meta">' +
+                      '<i class="fa-solid fa-code-branch"></i> ' + escHtml(run.branch) +
+                      ' &nbsp;|&nbsp; <i class="fa-solid fa-code-commit"></i> ' + run.commit +
+                      ' &nbsp;|&nbsp; <i class="fa-regular fa-clock"></i> ' + formatDate(run.created_at) +
+                      ' &nbsp;|&nbsp; <a class="github-link" href="' + run.html_url + '" target="_blank" onclick="event.stopPropagation()"><i class="fa-brands fa-github"></i> GitHub</a>' +
+                    '</div>' +
+                  '</div>' +
+                  '<span id="runbadge-' + run.id + '">' + conclusionBadge(run.conclusion, run.status) + '</span>' +
+                  '<span class="run-chevron ' + (isOpen?'open':'') + '" id="chevron-' + run.id + '"><i class="fa-solid fa-chevron-right"></i></span>' +
+                '</div>' +
+                '<div class="run-detail ' + (isOpen?'open':'') + '" id="detail-' + run.id + '"></div>';
+              list.insertBefore(card, list.firstChild);
+              if (isOpen) loadJobDetail(run.id, isInProgress);
+            } else {
+              // 既存run: アイコン・バッジのみ更新
+              var iconEl = document.getElementById('runicon-' + run.id);
+              var badgeEl = document.getElementById('runbadge-' + run.id);
+              if (iconEl) iconEl.innerHTML = conclusionIcon(run.conclusion, run.status);
+              if (badgeEl) badgeEl.innerHTML = conclusionBadge(run.conclusion, run.status);
 
-            var isInProgress = run.status === 'in_progress';
-            var detailEl = document.getElementById('detail-' + run.id);
-            if (detailEl && detailEl.classList.contains('open')) {
-              if (detailEl.children.length === 0) {
-                loadJobDetail(run.id, isInProgress);
-              } else {
-                updateJobDetail(run.id, isInProgress);
+              var isInProgress = run.status === 'in_progress';
+              var detailEl = document.getElementById('detail-' + run.id);
+              if (detailEl && detailEl.classList.contains('open')) {
+                if (detailEl.children.length === 0) {
+                  loadJobDetail(run.id, isInProgress);
+                } else {
+                  updateJobDetail(run.id, isInProgress);
+                }
               }
             }
           });
@@ -384,9 +416,11 @@
         document.getElementById('lastUpdated').textContent = '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
         if (hasInProgress) {
           document.getElementById('autoRefreshBadge').style.display = 'inline';
+          if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
           autoRefreshTimer = setTimeout(loadRuns, 10000);
         } else {
           document.getElementById('autoRefreshBadge').style.display = 'none';
+          if (autoRefreshTimer) { clearTimeout(autoRefreshTimer); autoRefreshTimer = null; }
         }
       } catch(e) {
         list.innerHTML = '<div class="loading" style="color:red">取得エラー: ' + e.message + '</div>';
