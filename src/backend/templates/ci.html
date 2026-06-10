@@ -285,7 +285,7 @@
       container.appendChild(div);
 
       // 実行中ステップの経過時間タイマーとログプレビューを開始
-      if (isInProgress || job.status === 'in_progress') {
+      if (job.status === 'in_progress') {
         job.steps.forEach(function(step) {
           if (step.status === 'in_progress' && step.started_at) {
             startElapsedTimer('elapsed-' + job.id + '-' + step.number, step.started_at);
@@ -301,7 +301,7 @@
       try {
         var res = await fetch('/api/ci/runs/' + runId + '/logs/' + jobId);
         if (!res.ok) {
-          previewEl.innerHTML = '<span style="color:#888">ログ準備中...</span>';
+          previewEl.innerHTML = '<span style="color:#888"><i class="fa-solid fa-spinner fa-spin"></i> ログ準備中...</span>';
           return;
         }
         var d = await res.json();
@@ -310,7 +310,7 @@
         previewEl.innerHTML = colorizeLog(last10);
         previewEl.scrollTop = previewEl.scrollHeight;
       } catch(e) {
-        previewEl.innerHTML = '<span style="color:#888">ログ取得失敗</span>';
+        previewEl.innerHTML = '<span style="color:#888"><i class="fa-solid fa-spinner fa-spin"></i> ログ準備中...</span>';
       }
     }
 
@@ -339,7 +339,7 @@
           list.innerHTML = '';
           d.runs.forEach(function(run) {
             var isInProgress = run.status === 'in_progress' || run.status === 'queued';
-            var isOpen = openDetails[run.id] || isInProgress;
+            var isOpen = openDetails[run.id] || run.status === 'in_progress';
             var card = document.createElement('div');
             card.className = 'run-card';
             card.id = 'runcard-' + run.id;
@@ -436,12 +436,15 @@
         var res = await fetch('/api/ci/runs/' + runId + '/jobs');
         var d = await res.json();
         if (!res.ok) throw new Error(d.detail);
-        if (!d.jobs.length) { detailEl.innerHTML = '<div style="color:#888;font-size:13px;padding:8px;">ジョブ情報がありません</div>'; return; }
+        if (!d.jobs.length) {
+          detailEl.innerHTML = '<div style="color:#888;font-size:13px;padding:8px;"><i class="fa-solid fa-clock"></i> ジョブ待機中... （Runnerがジョブを受け取るまでお待ちください）</div>';
+          return;
+        }
         d.jobs.forEach(function(job) {
           renderJobCard(detailEl, runId, job, isInProgress);
         });
       } catch(e) {
-        detailEl.innerHTML = '<div style="color:red;font-size:13px;">取得エラー: ' + e.message + '</div>';
+        detailEl.innerHTML = '<div style="color:#888;font-size:13px;padding:8px;"><i class="fa-solid fa-clock"></i> ジョブ情報を取得中...</div>';
       }
     }
 
