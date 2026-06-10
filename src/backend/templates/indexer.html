@@ -168,117 +168,182 @@
         font-style: italic;
         padding: 10px 0;
       }
+    
+      .subtitle { color: #777; margin-bottom: 30px; font-size: 13px; }
+      .card { background: #fff; border: 1px solid var(--border-color); border-radius: 6px; padding: 24px; max-width: 900px; margin-bottom: 24px; }
+      .card h2 { font-size: 15px; margin-bottom: 16px; border-left: 4px solid var(--accent-color); padding-left: 8px; }
+      h1 { font-size: 20px; margin-bottom: 8px; color: var(--text-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
+      #pdfList { list-style: none; margin: 16px 0; }
+      #pdfList li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin-bottom: 8px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; flex-wrap: wrap; }
+      #pdfList li .filename { flex: 1; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+      #pdfList li .filename i { color: var(--accent-color); }
+      .file-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .actions { display: flex; gap: 6px; }
+      .meta { font-size: 12px; color: #888; }
+      .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+      .badge-ok   { background: #e8f5e9; color: #2e7d32; }
+      .badge-warn { background: #fff8e1; color: #f57f17; }
+      .badge-none { background: #f5f5f5; color: #9e9e9e; }
+      .btn-reload { padding: 6px 14px; background: var(--accent-color); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-bottom: 12px; }
+      .btn-index  { padding: 6px 12px; background: var(--accent-color); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+      .btn-warn   { background: #f57f17; }
+      .btn-reindex { background: #5c7a70; }
+      .btn-delete { padding: 6px 12px; background: #e53935; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+      .btn-index:hover { opacity: 0.85; } .btn-delete:hover { opacity: 0.85; }
+      #logArea { background: #1e1e1e; color: #f0f0f0; padding: 16px; border-radius: 4px; font-size: 12px; min-height: 80px; max-height: 200px; overflow-y: auto; font-family: monospace; }
     </style>
   </head>
   <body>
-        <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;">
+    <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;">
       <span style="color:#aaa;font-size:13px;margin-right:8px;">🔗 メニュー:</span>
       <a href="/api/chat/ui" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">💬 チャット</a>
       <a href="/api/indexer" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📄 PDFインデクサー</a>
       <a href="/api/specs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📚 ドキュメント</a>
       <a href="/swagger/docs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🔧 API</a>
-    </nav>    <h1><i class="fa-solid fa-database"></i> PDFインデクサー</h1>
-    <p class="subtitle">src/backend/data/ 配下のPDFをChromaDBにインデックス化します</p>
+    </nav>
+    <div style="padding:40px;">
+      <h1><i class="fa-solid fa-file-pdf"></i> PDFインデクサー</h1>
+      <p class="subtitle">PDFファイルの登録状況確認・インデックス化・削除を行います</p>
 
-    <div class="card">
-      <h2><i class="fa-solid fa-file-pdf"></i> 対象PDFファイル一覧</h2>
-      <button class="btn-reload" onclick="loadPdfList()">
-        <i class="fa-solid fa-rotate-right"></i> 一覧を更新
-      </button>
-      <ul id="pdfList">
-        <li><span class="empty-msg">読み込み中...</span></li>
-      </ul>
-    </div>
+      <div class="card">
+        <h2><i class="fa-solid fa-list"></i> PDFファイル一覧</h2>
+        <button class="btn-reload" onclick="loadPdfList()">
+          <i class="fa-solid fa-rotate-right"></i> 一覧を更新
+        </button>
+        <ul id="pdfList"><li style="color:#999">読み込み中...</li></ul>
+      </div>
 
-    <div class="card">
-      <h2><i class="fa-solid fa-terminal"></i> 実行ログ</h2>
-      <div id="logArea">ログがここに表示されます。</div>
+      <div class="card">
+        <h2><i class="fa-solid fa-terminal"></i> 実行ログ</h2>
+        <div id="logArea">ログがここに表示されます。</div>
+      </div>
     </div>
 
     <script>
-      const pdfList = document.getElementById('pdfList');
-      const logArea = document.getElementById('logArea');
+      const logArea = document.getElementById("logArea");
 
-      function addLog(message, type = 'info') {
-        const span = document.createElement('span');
-        span.className = `log-${type}`;
-        const time = new Date().toLocaleTimeString('ja-JP');
-        span.textContent = `[${time}] ${message}\n`;
-        logArea.appendChild(span);
+      function log(msg, color) {
+        const d = new Date().toLocaleTimeString("ja-JP");
+        logArea.innerHTML += `<div style="color:${color||"#f0f0f0"}">${d} ${msg}</div>`;
         logArea.scrollTop = logArea.scrollHeight;
       }
 
-      async function loadPdfList() {
-        pdfList.innerHTML = '<li><span class="empty-msg">読み込み中...</span></li>';
-        try {
-          const res = await fetch('/api/pdf/list');
-          const data = await res.json();
+      function statusBadge(status) {
+        switch(status) {
+          case "unregistered": return '<span class="badge badge-none">未登録</span>';
+          case "registered":   return '<span class="badge badge-ok">登録済</span>';
+          case "outdated":     return '<span class="badge badge-warn">要更新</span>';
+          default:             return '<span class="badge badge-none">不明</span>';
+        }
+      }
 
-          if (data.files.length === 0) {
-            pdfList.innerHTML = '<li><span class="empty-msg">PDFファイルが見つかりません</span></li>';
+      async function loadPdfList() {
+        const list = document.getElementById("pdfList");
+        list.innerHTML = '<li style="color:#999">読み込み中...</li>';
+        try {
+          const res = await fetch("/api/pdf/list");
+          const data = await res.json();
+          if (!data.files || data.files.length === 0) {
+            list.innerHTML = '<li style="color:#999">PDFファイルが見つかりません</li>';
             return;
           }
-
-          pdfList.innerHTML = '';
-          data.files.forEach(filename => {
-            const li = document.createElement('li');
-            li.id = `file-${filename}`;
-            li.innerHTML = `
-              <span class="filename">
-                <i class="fa-solid fa-file-pdf"></i>
-                ${filename}
-                <span class="status-badge" id="status-${filename}"></span>
-              </span>
-              <button class="btn-index" onclick="indexPdf('${filename}')" id="btn-${filename}">
-                <i class="fa-solid fa-play"></i> インデックス化
-              </button>
-            `;
-            pdfList.appendChild(li);
-          });
-          addLog(`${data.files.length}件のPDFファイルを検出しました`, 'info');
-        } catch (e) {
-          pdfList.innerHTML = '<li><span class="empty-msg" style="color:red;">読み込みに失敗しました</span></li>';
-          addLog(`ファイル一覧の取得に失敗: ${e.message}`, 'error');
-        }
-      }
-
-      async function indexPdf(filename) {
-        const btn = document.getElementById(`btn-${filename}`);
-        const status = document.getElementById(`status-${filename}`);
-
-        btn.disabled = true;
-        status.className = 'status-badge status-loading';
-        status.textContent = '処理中...';
-        addLog(`インデックス化開始: ${filename}`, 'info');
-
-        try {
-          const res = await fetch('/api/pdf/index', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename })
-          });
-          const data = await res.json();
-
-          if (res.ok) {
-            status.className = 'status-badge status-success';
-            status.textContent = `✓ 完了 (${data.chunks}チャンク)`;
-            addLog(`完了: ${filename} → ${data.chunks}チャンクをChromaDBに登録`, 'success');
-          } else {
-            status.className = 'status-badge status-error';
-            status.textContent = 'エラー';
-            addLog(`エラー: ${data.detail}`, 'error');
-            btn.disabled = false;
+          list.innerHTML = "";
+          for (const filename of data.files) {
+            const li = document.createElement("li");
+            li.id = "file-" + filename;
+            li.innerHTML = `<span class="filename"><i class="fa-solid fa-file-pdf"></i> ${filename}</span>
+              <span class="file-info" id="info-${filename}">確認中...</span>
+              <span class="actions" id="actions-${filename}"></span>`;
+            list.appendChild(li);
+            loadFileStatus(filename);
           }
-        } catch (e) {
-          status.className = 'status-badge status-error';
-          status.textContent = 'エラー';
-          addLog(`通信エラー: ${e.message}`, 'error');
-          btn.disabled = false;
+        } catch(e) {
+          list.innerHTML = '<li style="color:red">読み込みエラー</li>';
         }
       }
 
-      // 初期ロード
-      window.addEventListener('DOMContentLoaded', loadPdfList);
+      async function loadFileStatus(filename) {
+        try {
+          const res = await fetch("/api/pdf/status?filename=" + encodeURIComponent(filename));
+          const d = await res.json();
+          const info = document.getElementById("info-" + filename);
+          const actions = document.getElementById("actions-" + filename);
+
+          const pageStr = d.page_count != null ? `${d.page_count}ページ` : "ページ数不明";
+          const chunkStr = d.chunk_count > 0 ? `${d.chunk_count}チャンク` : "";
+          const regDate = d.registered_at
+            ? new Date(d.registered_at * 1000).toLocaleString("ja-JP")
+            : "";
+
+          info.innerHTML = `${statusBadge(d.status)}
+            <span class="meta">${pageStr}${chunkStr ? " / " + chunkStr : ""}</span>
+            ${regDate ? '<span class="meta">登録: ' + regDate + '</span>' : ""}`;
+
+          let btns = "";
+          if (d.status === "unregistered") {
+            btns = `<button class="btn-index" onclick="indexPdf('${filename}', false)">
+              <i class="fa-solid fa-plus"></i> 登録</button>`;
+          } else if (d.status === "outdated") {
+            btns = `<button class="btn-index btn-warn" onclick="indexPdf('${filename}', true)">
+              <i class="fa-solid fa-rotate"></i> 更新</button>
+              <button class="btn-delete" onclick="deletePdf('${d.document_id}', '${filename}')">
+              <i class="fa-solid fa-trash"></i> 削除</button>`;
+          } else {
+            btns = `<button class="btn-index btn-reindex" onclick="indexPdf('${filename}', true)">
+              <i class="fa-solid fa-rotate"></i> 再登録</button>
+              <button class="btn-delete" onclick="deletePdf('${d.document_id}', '${filename}')">
+              <i class="fa-solid fa-trash"></i> 削除</button>`;
+          }
+          actions.innerHTML = btns;
+        } catch(e) {
+          document.getElementById("info-" + filename).innerHTML = '<span style="color:red">取得失敗</span>';
+        }
+      }
+
+      async function indexPdf(filename, force) {
+        const actions = document.getElementById("actions-" + filename);
+        actions.innerHTML = '<span style="color:#888"><i class="fa-solid fa-spinner fa-spin"></i> 処理中...</span>';
+        log(`インデックス化開始: ${filename}`, "#64d8ff");
+        try {
+          const res = await fetch("/api/pdf/index", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({filename, force})
+          });
+          const d = await res.json();
+          if (d.status === "success") {
+            log(`✅ 完了: ${filename} (${d.chunks}チャンク)`, "#69ff85");
+          } else {
+            log(`❌ エラー: ${d.detail}`, "#ff6b6b");
+          }
+        } catch(e) {
+          log(`❌ エラー: ${e}`, "#ff6b6b");
+        }
+        loadFileStatus(filename);
+      }
+
+      async function deletePdf(documentId, filename) {
+        if (!confirm(`"${filename}" の登録データを削除しますか？`)) return;
+        log(`削除開始: ${filename}`, "#64d8ff");
+        try {
+          const res = await fetch("/api/pdf/delete", {
+            method: "DELETE",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({document_id: documentId})
+          });
+          const d = await res.json();
+          if (d.status === "success") {
+            log(`✅ 削除完了: ${filename} (${d.deleted_chunks}チャンク削除)`, "#69ff85");
+          } else {
+            log(`❌ エラー: ${d.detail}`, "#ff6b6b");
+          }
+        } catch(e) {
+          log(`❌ エラー: ${e}`, "#ff6b6b");
+        }
+        loadFileStatus(filename);
+      }
+
+      window.onload = loadPdfList;
     </script>
   </body>
 </html>

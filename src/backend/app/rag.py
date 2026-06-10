@@ -16,7 +16,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # モデル名（v1 形式）
 # -----------------------------
 EMBEDDING_MODEL = "models/gemini-embedding-2"
-GENERATION_MODEL = "models/gemini-2.0-flash"
+GENERATION_MODEL = "models/gemini-2.5-flash-lite"
 
 def debug_list_models():
     print("---- 利用可能なモデル一覧 ----")
@@ -143,7 +143,7 @@ def extract_and_store_pdf(pdf_path: str, document_id: str) -> int:
         documents=chunks,
         embeddings=embeddings,
         ids=[f"{document_id}_{i}" for i in range(len(chunks))],
-        metadatas=[{"source": document_id, "chunk": i} for i in range(len(chunks))]
+        metadatas=[{"source": document_id, "chunk": i, "registered_at": str(time.time())} for i in range(len(chunks))]
     )
 
     return len(chunks)
@@ -152,7 +152,8 @@ def extract_and_store_pdf(pdf_path: str, document_id: str) -> int:
 # -----------------------------
 # RAG回答生成
 # -----------------------------
-def answer_with_rag(user_query: str) -> str:
+def answer_with_rag(user_query: str, model: str = None) -> str:
+    use_model = model or GENERATION_MODEL
     query_embedding = get_embedding(user_query)
 
     results = collection.query(
@@ -179,7 +180,7 @@ def answer_with_rag(user_query: str) -> str:
 """
 
     response = client.models.generate_content(
-        model=GENERATION_MODEL,
+        model=use_model,
         contents=prompt
     )
     return response.text

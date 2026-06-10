@@ -167,6 +167,32 @@
       }
 
       /* 入力エリア */
+      .model-select-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 16px;
+        background: #f0ede9;
+        border-top: 1px solid #d1cbc4;
+        font-size: 13px;
+        color: #555;
+      }
+
+      .model-select-bar select {
+        padding: 4px 10px;
+        border: 1px solid #d1cbc4;
+        border-radius: 4px;
+        font-size: 13px;
+        background: #fff;
+        color: #333;
+        cursor: pointer;
+      }
+
+      .model-select-bar select:focus {
+        outline: none;
+        border-color: #8fa89b;
+      }
+
       .input-area {
         background-color: var(--white);
         border-top: 1px solid var(--border-color);
@@ -282,6 +308,17 @@
       </div>
     </div>
 
+    <!-- モデル選択 -->
+    <div class="model-select-bar">
+      <label for="modelSelect"><i class="fa-solid fa-microchip"></i> モデル:</label>
+      <select id="modelSelect">
+        <option value="models/gemini-2.5-flash">gemini-2.5-flash</option>
+        <option value="models/gemini-2.0-flash">gemini-2.0-flash</option>
+        <option value="models/gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+        <option value="models/gemini-2.5-pro">gemini-2.5-pro</option>
+      </select>
+    </div>
+
     <!-- 入力エリア -->
     <div class="input-area">
       <div class="input-wrapper">
@@ -379,7 +416,7 @@
           const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text })
+            body: JSON.stringify({ message: text, model: document.getElementById('modelSelect').value })
           });
 
           const data = await res.json();
