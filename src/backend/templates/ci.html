@@ -178,6 +178,13 @@
         });
 
         document.getElementById('lastUpdated').textContent = '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
+
+        // in_progressがあれば15秒後に自動更新
+        var hasInProgress = d.runs.some(function(r) { return r.status === 'in_progress'; });
+        if (hasInProgress) {
+          document.getElementById('lastUpdated').textContent += ' （実行中のCIを自動更新中...）';
+          setTimeout(loadRuns, 15000);
+        }
       } catch(e) {
         list.innerHTML = '<div class="loading" style="color:red">取得エラー: ' + e.message + '</div>';
       }
