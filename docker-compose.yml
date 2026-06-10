@@ -19,6 +19,7 @@ services:
       - CHROMA_HOST=vectordb
       - CHROMA_PORT=8000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
     depends_on:
       - vectordb
     volumes:

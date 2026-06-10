@@ -276,6 +276,111 @@ async def run_script(request: ShRequest):
 async def read_utilities(request: Request):
     return templates.TemplateResponse(request, "utilities.html")
 
+
+import urllib.request
+import json as json_module
+
+GITHUB_REPO = "redmine54/ai_chat"
+
+@app.get("/api/ci/runs")
+async def get_ci_runs():
+    """GitHub ActionsのCI実行結果一覧を取得する"""
+    token = os.environ.get("GITHUB_TOKEN", "")
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/runs?per_page=10"
+    req = urllib.request.Request(url, headers={
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "aichat-ci-viewer",
+        **({"Authorization": f"Bearer {token}"} if token else {})
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json_module.loads(res.read())
+        runs = []
+        for r in data.get("workflow_runs", []):
+            runs.append({
+                "id": r["id"],
+                "name": r["name"],
+                "branch": r["head_branch"],
+                "commit": r["head_sha"][:7],
+                "commit_msg": r["head_commit"]["message"].split("\n")[0] if r.get("head_commit") else "",
+                "status": r["status"],
+                "conclusion": r["conclusion"],
+                "created_at": r["created_at"],
+                "html_url": r["html_url"],
+            })
+        return {"runs": runs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"GitHub API取得失敗: {str(e)}")
+
+@app.get("/api/ci/runs/{run_id}/jobs")
+async def get_ci_jobs(run_id: int):
+    """指定したCI実行のジョブ・ステップ詳細を取得する"""
+    token = os.environ.get("GITHUB_TOKEN", "")
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/runs/{run_id}/jobs"
+    req = urllib.request.Request(url, headers={
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "aichat-ci-viewer",
+        **({"Authorization": f"Bearer {token}"} if token else {})
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json_module.loads(res.read())
+        jobs = []
+        for j in data.get("jobs", []):
+            steps = []
+            for s in j.get("steps", []):
+                steps.append({
+                    "name": s["name"],
+                    "status": s["status"],
+                    "conclusion": s["conclusion"],
+                    "number": s["number"],
+                })
+            jobs.append({
+                "id": j["id"],
+                "name": j["name"],
+                "status": j["status"],
+                "conclusion": j["conclusion"],
+                "started_at": j.get("started_at"),
+                "completed_at": j.get("completed_at"),
+                "html_url": j["html_url"],
+                "steps": steps,
+            })
+        return {"jobs": jobs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"GitHub API取得失敗: {str(e)}")
+
+@app.get("/api/ci/runs/{run_id}/logs/{job_id}")
+async def get_ci_logs(run_id: int, job_id: int):
+    """指定したジョブのログを取得する"""
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="GITHUB_TOKENが設定されていません")
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/jobs/{job_id}/logs"
+    req = urllib.request.Request(url, headers={
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "aichat-ci-viewer",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            logs = res.read().decode("utf-8", errors="replace")
+        return {"logs": logs[:50000]}  # 最大50000文字
+    except urllib.error.HTTPError as e:
+        if e.code == 302:
+            # リダイレクト先のURLからログを取得
+            location = e.headers.get("Location")
+            if location:
+                req2 = urllib.request.Request(location, headers={"User-Agent": "aichat-ci-viewer"})
+                with urllib.request.urlopen(req2, timeout=10) as res2:
+                    logs = res2.read().decode("utf-8", errors="replace")
+                return {"logs": logs[:50000]}
+        raise HTTPException(status_code=500, detail=f"ログ取得失敗: {str(e)}")
+
+# CI結果画面
+@app.get("/api/ci", response_class=HTMLResponse)
+async def read_ci(request: Request):
+    return templates.TemplateResponse(request, "ci.html")
+
 # PDFインデクサー画面
 @app.get("/api/indexer", response_class=HTMLResponse)
 async def read_indexer(request: Request):
