@@ -334,6 +334,8 @@ async def get_ci_jobs(run_id: int):
                     "status": s["status"],
                     "conclusion": s["conclusion"],
                     "number": s["number"],
+                    "started_at": s.get("started_at"),
+                    "completed_at": s.get("completed_at"),
                 })
             jobs.append({
                 "id": j["id"],
