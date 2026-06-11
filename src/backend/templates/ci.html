@@ -184,10 +184,19 @@
         var d = await res.json();
         if (!res.ok) return;
 
+        // detailElが空の場合は全レンダリング、そうでなければ差分更新
+        var existingJobCard = document.getElementById('jobcard-' + d.jobs[0].id);
+        if (!existingJobCard) {
+          detailEl.innerHTML = '';
+          d.jobs.forEach(function(job) {
+            renderJobCard(detailEl, runId, job, isInProgress);
+          });
+          return;
+        }
+
         d.jobs.forEach(function(job) {
           var jobCard = document.getElementById('jobcard-' + job.id);
           if (!jobCard) {
-            // 新規レンダリング
             renderJobCard(detailEl, runId, job, isInProgress);
           } else {
             // 差分更新: アイコンとバッジのみ更新
@@ -301,11 +310,12 @@
       try {
         var res = await fetch('/api/ci/runs/' + runId + '/logs/' + jobId);
         if (!res.ok) {
-          previewEl.innerHTML = '<span style="color:#888"><i class="fa-solid fa-spinner fa-spin"></i> ログ準備中...</span>';
+          previewEl.innerHTML = '<span style="color:#888"><i class="fa-solid fa-spinner fa-spin"></i> ログ準備中 (' + res.status + ')...</span>';
           return;
         }
-        var d = await res.json();
-        var lines = d.logs.split('\n').filter(function(l) { return l.trim(); });
+        var logData = await res.json();
+        if (!logData.logs) { previewEl.innerHTML = '<span style="color:#888">ログなし</span>'; return; }
+        var lines = logData.logs.split('\n').filter(function(l) { return l.trim(); });
         var last10 = lines.slice(-10).join('\n');
         previewEl.innerHTML = colorizeLog(last10);
         previewEl.scrollTop = previewEl.scrollHeight;
