@@ -8,7 +8,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  DEPLOY_ENV: compose # compose / minikube / aks
+  DEPLOY_ENV: compose
 
 jobs:
   ci:
@@ -18,20 +18,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
+      # ▼ docker-compose.yml がプロジェクトルートにある前提
+      - name: Build with docker compose
+        working-directory: .
         run: |
-          docker build --no-cache -t aichat:latest \
-            -f src/backend/Dockerfile \
-            .
+          docker compose build backend
 
       - name: Run unit tests
+        working-directory: .
         run: |
-          docker run --rm aichat:latest python -m pytest tests/unit/ -v || \
+          docker compose run --rm backend python -m pytest tests/unit/ -v || \
           echo "⚠️ テストコードがありません（tests/unit/）"
 
       - name: Run integration tests
+        working-directory: .
         run: |
-          docker run --rm aichat:latest python -m pytest tests/integration/ -v || \
+          docker compose run --rm backend python -m pytest tests/integration/ -v || \
           echo "⚠️ テストコードがありません（tests/integration/）"
 
       - name: Skip K8s validation (compose)
