@@ -9,6 +9,8 @@ import google.genai as genai  # ← これが正しい
 import chromadb
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
+from typing import Sequence
+
 
 # -----------------------------
 # Gemini API 初期化（v1 エンドポイント強制）
@@ -144,7 +146,8 @@ def extract_and_store_pdf(pdf_path: str, document_id: str) -> int:
         embeddings.append(embedding)
         time.sleep(0.1)
 
-    embeddings_seq: list[list[float]] = [list(e) for e in embeddings]
+    # ChromaDB に登録
+    embeddings_seq: list[Sequence[float]] = [list(e) for e in embeddings]
     collection.add(
         documents=chunks,
         embeddings=embeddings_seq,
@@ -166,7 +169,6 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
     query_embedding = get_embedding(user_query)
 
     # 修正後
-    from typing import Sequence
 
     query_typed: list[Sequence[float]] = [list(query_embedding)]
     results = collection.query(query_embeddings=query_typed, n_results=5)
