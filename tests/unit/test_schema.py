@@ -4,7 +4,6 @@ Unit Tests for Pydantic schemas
 """
 
 import pytest
-from pydantic import ValidationError
 
 
 def test_chat_request_valid():
@@ -44,7 +43,7 @@ def test_index_request_force_default_false():
     from app.main import IndexRequest
 
     req = IndexRequest(filename="test.pdf")
-    assert req.force == False
+    assert req.force !
 
 
 def test_index_request_force_true():
@@ -52,7 +51,7 @@ def test_index_request_force_true():
     from app.main import IndexRequest
 
     req = IndexRequest(filename="test.pdf", force=True)
-    assert req.force == True
+    assert req.force 
 
 
 def test_delete_request_valid():

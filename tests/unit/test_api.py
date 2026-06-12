@@ -5,9 +5,8 @@ Unit Tests for main.py API endpoints
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
-import os
 
 sys.path.insert(0, "/app")
 
