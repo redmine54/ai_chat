@@ -1,5 +1,6 @@
 # src/backend/app/rag.py
 import os
+from typing import Optional
 import re
 import time
 
@@ -71,9 +72,13 @@ def get_embedding(text: str, retry: int = 3) -> list:
     for attempt in range(retry):
         try:
             result = client.models.embed_content(
-                model=EMBEDDING_MODEL, contents=[{"parts": [{"text": t}]}]
+                model=EMBEDDING_MODEL,
+                contents=t
             )
-            return result.embeddings[0].values
+            embeddings = result.embeddings
+            if embeddings is None:
+                raise ValueError("embeddingsがNoneです")
+            return list(embeddings[0].values)
 
         except Exception as e:
             print(f"ベクトル化エラー（試行{attempt + 1}/{retry}）: {e}")
@@ -137,9 +142,11 @@ def extract_and_store_pdf(pdf_path: str, document_id: str) -> int:
         embeddings.append(embedding)
         time.sleep(0.1)
 
+    import numpy as np
+    embeddings_array = [np.array(e, dtype=np.float32) for e in embeddings]
     collection.add(
         documents=chunks,
-        embeddings=embeddings,
+        embeddings=embeddings_array,
         ids=[f"{document_id}_{i}" for i in range(len(chunks))],
         metadatas=[
             {"source": document_id, "chunk": i, "registered_at": str(time.time())}
@@ -153,11 +160,12 @@ def extract_and_store_pdf(pdf_path: str, document_id: str) -> int:
 # -----------------------------
 # RAG回答生成
 # -----------------------------
-def answer_with_rag(user_query: str, model: str = None) -> str:
+def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
     use_model = model or GENERATION_MODEL
     query_embedding = get_embedding(user_query)
 
-    results = collection.query(query_embeddings=[query_embedding], n_results=5)
+    import numpy as np
+    results = collection.query(query_embeddings=[np.array(query_embedding, dtype=np.float32)], n_results=5)
 
     context = "\n".join(results["documents"][0]) if results["documents"] else ""
 

@@ -176,8 +176,12 @@ async def pdf_status(filename: str):
         # メタデータから登録日時を取得
         registered_at = None
         for meta in existing["metadatas"]:
-            if meta.get("registered_at"):
-                registered_at = float(meta["registered_at"])
+            val = meta.get("registered_at") if meta else None
+            if val is not None:
+                try:
+                    registered_at = float(str(val))
+                except (ValueError, TypeError):
+                    pass
                 break
 
         if registered_at and pdf_mtime > registered_at:
@@ -403,15 +407,7 @@ async def get_ci_logs(run_id: int, job_id: int):
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/jobs/{job_id}/logs"
 
     # リダイレクトを手動で追いかける
-    opener = urllib.request.OpenerDirector()
-    opener.addhandlers = []
-
     try:
-        # まずGitHub APIにリクエスト（リダイレクトを自動追跡）
-        # import http.client
-        # import ssl
-        # ctx = ssl.create_default_context()
-
         headers = {
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {token}",
