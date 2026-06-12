@@ -15,27 +15,43 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # 1) コード取得（Checkout）
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ▼ docker-compose.yml がプロジェクトルートにある前提
+      # 2) Docker Compose で backend をビルド
       - name: Build with docker compose
         working-directory: .
         run: |
           docker compose build backend
 
+      # 3) 依存関係インストール（backend コンテナ内）
+      - name: Install dependencies
+        working-directory: .
+        run: |
+          docker compose run --rm backend pip install -r requirements.txt
+
+      # 4) Lint（ruff または flake8）
+      - name: Run Lint (ruff)
+        working-directory: .
+        run: |
+          docker compose run --rm backend ruff check .
+
+      # 5) Unit Test
       - name: Run unit tests
         working-directory: .
         run: |
           docker compose run --rm backend python -m pytest tests/unit/ -v || \
           echo "⚠️ テストコードがありません（tests/unit/）"
 
+      # 6) Integration Test
       - name: Run integration tests
         working-directory: .
         run: |
           docker compose run --rm backend python -m pytest tests/integration/ -v || \
           echo "⚠️ テストコードがありません（tests/integration/）"
 
+      # 7) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
         if: env.DEPLOY_ENV == 'compose'
         run: |
