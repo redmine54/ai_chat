@@ -70,13 +70,13 @@ jobs:
           path: coverage.xml
 
       # 8) Integration Test
-      - name: Run integration tests
+      - name: Run integration tests without coverage
         run: |
           docker compose run --rm backend pytest tests/integration/ -v || \
           echo "⚠️ Integration test がありません"
 
       # 9) Docker イメージ脆弱性チェック（Trivy）
-      - name: Security Scan (Trivy)
+      - name: Security Scan (Trivy:Docker イメージ脆弱性チェック)
         run: |
           trivy image --exit-code 1 --severity HIGH,CRITICAL backend:latest
 
