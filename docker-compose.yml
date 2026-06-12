@@ -29,7 +29,6 @@ services:
       # 以下は /app 内の特定フォルダを上書きする
       - ./docs:/app/docs
       - ./src/backend/data:/app/data
-      - ./README.md:/app/README.md
       - ./src/backend/templates:/app/templates
 
     #  - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加
