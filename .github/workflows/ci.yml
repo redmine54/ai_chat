@@ -24,8 +24,7 @@ jobs:
 
       # 2) Docker Compose で backend をビルド
       - name: Build backend image
-        run: docker compose build backend
-
+        run: docker compose build --no-cache backend
       # 3) 依存関係インストール
       - name: Install dependencies
         run: docker compose run --rm backend pip install -r requirements.txt
