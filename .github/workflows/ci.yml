@@ -29,6 +29,11 @@ jobs:
       # イメージ削除（中間イメージも含む完全クリーンアップ）
       - name: Cleanup ALL Docker images (including intermediate)
         run: docker system prune -af || true
+        
+      # コンテナ削除
+      - name: Cleanup old Docker containers
+        run: docker container prune -f || true
+
 
       # 2) Docker Compose で backend をビルド
       - name: Build backend image
