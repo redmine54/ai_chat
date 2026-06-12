@@ -101,7 +101,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
 
     print(f"テキスト抽出できないためOCRを使用: {pdf_path}")
     try:
-        import pytesseract
+        import pytesseract  # type: ignore[import-untyped]
         from pdf2image import convert_from_path
 
         images = convert_from_path(pdf_path, dpi=200)
@@ -139,12 +139,10 @@ def extract_and_store_pdf(pdf_path: str, document_id: str) -> int:
         embeddings.append(embedding)
         time.sleep(0.1)
 
-    import numpy as np
-
-    embeddings_array = [np.array(e, dtype=np.float32) for e in embeddings]
+    embeddings_seq: list[list[float]] = [list(e) for e in embeddings]
     collection.add(
         documents=chunks,
-        embeddings=embeddings_array,
+        embeddings=embeddings_seq,
         ids=[f"{document_id}_{i}" for i in range(len(chunks))],
         metadatas=[
             {"source": document_id, "chunk": i, "registered_at": str(time.time())}
@@ -162,10 +160,8 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
     use_model = model or GENERATION_MODEL
     query_embedding = get_embedding(user_query)
 
-    import numpy as np
-
     results = collection.query(
-        query_embeddings=[np.array(query_embedding, dtype=np.float32)], n_results=5
+        query_embeddings=[list(query_embedding)], n_results=5
     )
 
     context = "\n".join(results["documents"][0]) if results["documents"] else ""
@@ -187,4 +183,4 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
 """
 
     response = client.models.generate_content(model=use_model, contents=prompt)
-    return response.text
+    return str(response.text) if response.text is not None else ""

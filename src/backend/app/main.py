@@ -175,7 +175,8 @@ async def pdf_status(filename: str):
     else:
         # メタデータから登録日時を取得
         registered_at = None
-        for meta in existing["metadatas"]:
+        metadatas = existing.get("metadatas") or []
+        for meta in metadatas:
             val = meta.get("registered_at") if meta else None
             if val is not None:
                 try:
