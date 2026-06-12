@@ -9,4 +9,4 @@ Pillow
 jinja2
 python-multipart
 pytest
-ruff
+ruff>=0.4.0
