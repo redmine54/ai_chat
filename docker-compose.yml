@@ -1,65 +1,44 @@
-name: CI
+services:
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./src/frontend:/usr/share/nginx/html
+      - ./src/frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
 
-on:
-  push:
-    branches: [feature/**]
-  pull_request:
-    branches: [main]
+  backend:
+    build:
+      context: . # プロジェクトルートをコンテキストに
+      dockerfile: src/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - CHROMA_HOST=vectordb
+      - CHROMA_PORT=8000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    depends_on:
+      - vectordb
+    volumes:
+      - ./docs:/app/docs
+      - ./src/backend/data:/app/data
+      - ./README.md:/app/README.md
+      - ./src/backend/templates:/app/templates
+    #  - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  DEPLOY_ENV: compose
+  vectordb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
 
-jobs:
-  ci:
-    runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: .
-
-    steps:
-      # 1) コード取得（Checkout）
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 2) Docker Compose で backend をビルド
-      - name: Build backend image
-        run: docker compose build backend
-
-      # 3) 依存関係インストール
-      - name: Install dependencies
-        run: docker compose run --rm backend pip install -r requirements.txt
-
-      # 4) Lint（ruff）
-      - name: Run Lint (ruff)
-        run: docker compose run --rm backend ruff check .
-
-      # 5) Unit Test
-      - name: Run unit tests
-        run: |
-          docker compose run --rm backend python -m pytest tests/unit/ -v || \
-          echo "⚠️ テストコードがありません（tests/unit/）"
-
-      # 6) Integration Test
-      - name: Run integration tests
-        run: |
-          docker compose run --rm backend python -m pytest tests/integration/ -v || \
-          echo "⚠️ テストコードがありません（tests/integration/）"
-
-      # 7) K8s 検証（compose の場合はスキップ）
-      - name: Skip K8s validation (compose)
-        if: env.DEPLOY_ENV == 'compose'
-        run: echo "✅ docker composeモードのためK8s検証をスキップします"
-
-      - name: Validate K8s manifests (minikube)
-        if: env.DEPLOY_ENV == 'minikube'
-        run: |
-          minikube start || true
-          find k8s/ -name "*.yaml" ! -name "kustomization.yaml" | \
-            xargs kubectl apply --dry-run=client --validate=false -f
-
-      - name: Validate K8s manifests (aks)
-        if: env.DEPLOY_ENV == 'aks'
-        run: |
-          find k8s/ -name "*.yaml" ! -name "kustomization.yaml" | \
-            xargs kubectl apply --dry-run=client --validate=false -f
+volumes:
+  chroma-data:
+  #chroma-persistent:   # PersistentClient用ボリューム追加

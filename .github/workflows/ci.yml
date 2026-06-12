@@ -13,6 +13,9 @@ env:
 jobs:
   ci:
     runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: .
 
     steps:
       # 1) コード取得（Checkout）
@@ -20,33 +23,25 @@ jobs:
         uses: actions/checkout@v4
 
       # 2) Docker Compose で backend をビルド
-      - name: Build with docker compose
-        working-directory: .
-        run: |
-          docker compose build backend
+      - name: Build backend image
+        run: docker compose build backend
 
-      # 3) 依存関係インストール（backend コンテナ内）
+      # 3) 依存関係インストール
       - name: Install dependencies
-        working-directory: .
-        run: |
-          docker compose run --rm backend pip install -r requirements.txt
+        run: docker compose run --rm backend pip install -r requirements.txt
 
-      # 4) Lint（ruff または flake8）
+      # 4) Lint（ruff）
       - name: Run Lint (ruff)
-        working-directory: .
-        run: |
-          docker compose run --rm backend ruff check .
+        run: docker compose run --rm backend ruff check .
 
       # 5) Unit Test
       - name: Run unit tests
-        working-directory: .
         run: |
           docker compose run --rm backend python -m pytest tests/unit/ -v || \
           echo "⚠️ テストコードがありません（tests/unit/）"
 
       # 6) Integration Test
       - name: Run integration tests
-        working-directory: .
         run: |
           docker compose run --rm backend python -m pytest tests/integration/ -v || \
           echo "⚠️ テストコードがありません（tests/integration/）"
@@ -54,8 +49,7 @@ jobs:
       # 7) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
         if: env.DEPLOY_ENV == 'compose'
-        run: |
-          echo "✅ docker composeモードのためK8s検証をスキップします"
+        run: echo "✅ docker composeモードのためK8s検証をスキップします"
 
       - name: Validate K8s manifests (minikube)
         if: env.DEPLOY_ENV == 'minikube'
