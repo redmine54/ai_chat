@@ -24,10 +24,9 @@ services:
       - vectordb
     volumes:
       # backend のコードを丸ごと /app にマウント（最重要）
-      - ./src/backend:/app
+    #  - ./src/backend:/app
 
       # 以下は /app 内の特定フォルダを上書きする
-      - ./requirements.txt:/app/requirements.txt
       - ./docs:/app/docs
       - ./src/backend/data:/app/data
       - ./src/backend/templates:/app/templates
