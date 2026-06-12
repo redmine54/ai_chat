@@ -369,9 +369,9 @@ async def get_ci_logs(run_id: int, job_id: int):
     try:
         # まずGitHub APIにリクエスト（リダイレクトを自動追跡）
         #import http.client
-        import ssl
+        #import ssl
+        #ctx = ssl.create_default_context()
 
-        ctx = ssl.create_default_context()
         headers = {
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {token}",
