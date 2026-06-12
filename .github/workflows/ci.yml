@@ -48,8 +48,7 @@ jobs:
 
       # 5) Lint（ruff）
       - name: Run Lint (ruff)
-      #  run: docker compose run --rm backend ruff check .
-        run: docker compose run --rm backend ruff format --check .
+        run: docker compose run --rm backend ruff check .
 
       # 6) 型チェック（mypy）
       - name: Run Type Check (mypy)
