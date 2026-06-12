@@ -45,15 +45,15 @@ jobs:
 
       # 4) Format チェック（ruff fmt --check）
       - name: Run Format Check (ruff fmt)
-        run: docker compose run --rm backend ruff format --check app
+        run: docker compose run --rm backend ruff format --check .
 
       # 5) Lint（ruff）
       - name: Run Lint (ruff)
-        run: docker compose run --rm backend ruff check app
+        run: docker compose run --rm backend ruff check .
 
       # 6) 型チェック（mypy）
       - name: Run Type Check (mypy)
-        run: docker compose run --rm backend mypy app
+        run: docker compose run --rm backend mypy .
 
       # 7) Unit Test（カバレッジ付き）
       # coverage.xml を生成して GitHub Actions にアップロード
