@@ -19,10 +19,10 @@ ENV GOOGLE_API_VERSION=v1
 #RUN pip install --upgrade google-generativeai
 
 # 5. requirements.txt をコピー
-COPY src/backend/requirements.txt .
+#COPY src/backend/requirements.txt .
 
 # 6. ライブラリをインストール
-RUN pip install --no-cache-dir -r requirements.txt
+#RUN pip install --no-cache-dir -r requirements.txt
 
 # 7. バックエンドのソースコードをコピー
 COPY src/backend/ .
