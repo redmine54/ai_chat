@@ -3,7 +3,7 @@ Unit Tests for Pydantic schemas
 対象: ChatRequest, IndexRequest, DeleteRequest
 """
 
-import pytest
+#import pytest
 
 
 def test_chat_request_valid():
