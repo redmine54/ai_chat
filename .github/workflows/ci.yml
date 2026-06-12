@@ -22,12 +22,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # CI の最初に古い volume を全部削除（Checkoutの直後
+      # CI の最初に古い volume を全部削除（Checkoutの直後)
       - name: Cleanup old Docker volumes.    # ボリューム削除
         run: docker volume prune -f || true
 
-      - name: Cleanup old Docker images      # イメージ削除
-        run: docker image prune -af || true
+      # イメージ削除（中間イメージも含む完全クリーンアップ）
+      - name: Cleanup ALL Docker images (including intermediate)
+        run: docker system prune -af || true
 
       # 2) Docker Compose で backend をビルド
       - name: Build backend image
