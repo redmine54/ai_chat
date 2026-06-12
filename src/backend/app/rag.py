@@ -71,10 +71,7 @@ def get_embedding(text: str, retry: int = 3) -> list:
     t = str(text).strip()
     for attempt in range(retry):
         try:
-            result = client.models.embed_content(
-                model=EMBEDDING_MODEL,
-                contents=t
-            )
+            result = client.models.embed_content(model=EMBEDDING_MODEL, contents=t)
             embeddings = result.embeddings
             if embeddings is None:
                 raise ValueError("embeddingsがNoneです")
@@ -143,6 +140,7 @@ def extract_and_store_pdf(pdf_path: str, document_id: str) -> int:
         time.sleep(0.1)
 
     import numpy as np
+
     embeddings_array = [np.array(e, dtype=np.float32) for e in embeddings]
     collection.add(
         documents=chunks,
@@ -165,7 +163,10 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
     query_embedding = get_embedding(user_query)
 
     import numpy as np
-    results = collection.query(query_embeddings=[np.array(query_embedding, dtype=np.float32)], n_results=5)
+
+    results = collection.query(
+        query_embeddings=[np.array(query_embedding, dtype=np.float32)], n_results=5
+    )
 
     context = "\n".join(results["documents"][0]) if results["documents"] else ""
 
