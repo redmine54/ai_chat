@@ -15,7 +15,6 @@ import urllib.request
 import json as json_module
 
 
-
 # /app/app/main.py → /app/app → /app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -30,14 +29,14 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 
 app = FastAPI(
-    docs_url=None,
-    redoc_url="/swagger/redoc",
-    openapi_url="/swagger/openapi.json"
+    docs_url=None, redoc_url="/swagger/redoc", openapi_url="/swagger/openapi.json"
 )
+
 
 @app.get("/swagger/docs", include_in_schema=False)
 async def custom_swagger_ui():
     from fastapi.responses import HTMLResponse
+
     return HTMLResponse("""<!DOCTYPE html>
 <html>
 <head>
@@ -66,6 +65,7 @@ async def custom_swagger_ui():
 </body>
 </html>""")
 
+
 app.add_middleware(NoCacheMiddleware)
 
 
@@ -83,6 +83,7 @@ class IndexRequest(BaseModel):
 async def chat_endpoint(request: ChatRequest):
     """RAG+Geminiで回答生成"""
     from app.rag import answer_with_rag
+
     try:
         answer = answer_with_rag(request.message, model=request.model)
         return {"answer": answer}
@@ -107,7 +108,9 @@ async def index_pdf(request: IndexRequest):
 
     # ファイル存在チェック
     if not os.path.exists(pdf_path):
-        raise HTTPException(status_code=404, detail=f"ファイルが見つかりません: {request.filename}")
+        raise HTTPException(
+            status_code=404, detail=f"ファイルが見つかりません: {request.filename}"
+        )
 
     # 拡張子チェック
     if not request.filename.lower().endswith(".pdf"):
@@ -120,16 +123,19 @@ async def index_pdf(request: IndexRequest):
             "status": "success",
             "filename": request.filename,
             "document_id": document_id,
-            "chunks": chunk_count
+            "chunks": chunk_count,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"インデックス化に失敗しました: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"インデックス化に失敗しました: {str(e)}"
+        )
 
 
 # HTMLテンプレートディレクトリ
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # favicon
+
 
 class DeleteRequest(BaseModel):
     document_id: str
@@ -147,7 +153,9 @@ async def pdf_status(filename: str):
 
     # PDFのページ数・更新日時を取得
     if not os.path.exists(pdf_path):
-        raise HTTPException(status_code=404, detail=f"ファイルが見つかりません: {filename}")
+        raise HTTPException(
+            status_code=404, detail=f"ファイルが見つかりません: {filename}"
+        )
 
     try:
         reader = PdfReader(pdf_path)
@@ -195,25 +203,32 @@ async def delete_pdf(request: DeleteRequest):
 
     existing = collection.get(where={"source": request.document_id})
     if not existing["ids"]:
-        raise HTTPException(status_code=404, detail=f"登録データが見つかりません: {request.document_id}")
+        raise HTTPException(
+            status_code=404, detail=f"登録データが見つかりません: {request.document_id}"
+        )
 
     collection.delete(ids=existing["ids"])
     return {
         "status": "success",
         "document_id": request.document_id,
-        "deleted_chunks": len(existing["ids"])
+        "deleted_chunks": len(existing["ids"]),
     }
+
 
 @app.get("/favicon.ico")
 async def favicon():
     return FileResponse(os.path.join(BASE_DIR, "static", "favicon.ico"))
 
+
 # docsディレクトリを静的ファイルとして公開
-app.mount("/api/docs", StaticFiles(directory=os.path.join(BASE_DIR, "docs")), name="docs")
+app.mount(
+    "/api/docs", StaticFiles(directory=os.path.join(BASE_DIR, "docs")), name="docs"
+)
 
 # ルート直下のREADME.md用
 if os.path.exists(os.path.join(BASE_DIR, "README.md")):
     app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
+
 
 # チャット画面（メイン）
 @app.get("/", response_class=HTMLResponse)
@@ -221,11 +236,11 @@ if os.path.exists(os.path.join(BASE_DIR, "README.md")):
 async def read_chat(request: Request):
     return templates.TemplateResponse(request, "chat.html")
 
+
 # ドキュメントビューア
 @app.get("/api/specs", response_class=HTMLResponse)
 async def read_specs(request: Request):
     return templates.TemplateResponse(request, "specs.html")
-
 
 
 # 実行許可スクリプト一覧（セキュリティのため明示的に許可）
@@ -246,27 +261,34 @@ ALLOWED_SCRIPTS = [
     "外部公開_compose.sh",
 ]
 
+
 class ShRequest(BaseModel):
     script: str
+
 
 @app.post("/api/sh/run")
 async def run_script(request: ShRequest):
     """シェルスクリプトを実行してログをストリーミング返却する"""
     if request.script not in ALLOWED_SCRIPTS:
-        raise HTTPException(status_code=403, detail=f"実行が許可されていません: {request.script}")
+        raise HTTPException(
+            status_code=403, detail=f"実行が許可されていません: {request.script}"
+        )
 
     script_path = os.path.join(BASE_DIR, "..", request.script)
     script_path = os.path.abspath(script_path)
 
     if not os.path.exists(script_path):
-        raise HTTPException(status_code=404, detail=f"スクリプトが見つかりません: {request.script}")
+        raise HTTPException(
+            status_code=404, detail=f"スクリプトが見つかりません: {request.script}"
+        )
 
     async def stream_output():
         proc = await asyncio.create_subprocess_exec(
-            "bash", script_path,
+            "bash",
+            script_path,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-            cwd=os.path.dirname(script_path)
+            cwd=os.path.dirname(script_path),
         )
         async for line in proc.stdout:
             yield line.decode("utf-8", errors="replace")
@@ -275,55 +297,67 @@ async def run_script(request: ShRequest):
 
     return StreamingResponse(stream_output(), media_type="text/plain")
 
+
 # ユーティリティ画面
 @app.get("/api/utilities", response_class=HTMLResponse)
 async def read_utilities(request: Request):
     return templates.TemplateResponse(request, "utilities.html")
 
 
-
 GITHUB_REPO = "redmine54/ai_chat"
+
 
 @app.get("/api/ci/runs")
 async def get_ci_runs():
     """GitHub ActionsのCI実行結果一覧を取得する"""
     token = os.environ.get("GITHUB_TOKEN", "")
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/runs?per_page=10"
-    req = urllib.request.Request(url, headers={
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "aichat-ci-viewer",
-        **({"Authorization": f"Bearer {token}"} if token else {})
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "aichat-ci-viewer",
+            **({"Authorization": f"Bearer {token}"} if token else {}),
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=10) as res:
             data = json_module.loads(res.read())
         runs = []
         for r in data.get("workflow_runs", []):
-            runs.append({
-                "id": r["id"],
-                "name": r["name"],
-                "branch": r["head_branch"],
-                "commit": r["head_sha"][:7],
-                "commit_msg": r["head_commit"]["message"].split("\n")[0] if r.get("head_commit") else "",
-                "status": r["status"],
-                "conclusion": r["conclusion"],
-                "created_at": r["created_at"],
-                "html_url": r["html_url"],
-            })
+            runs.append(
+                {
+                    "id": r["id"],
+                    "name": r["name"],
+                    "branch": r["head_branch"],
+                    "commit": r["head_sha"][:7],
+                    "commit_msg": r["head_commit"]["message"].split("\n")[0]
+                    if r.get("head_commit")
+                    else "",
+                    "status": r["status"],
+                    "conclusion": r["conclusion"],
+                    "created_at": r["created_at"],
+                    "html_url": r["html_url"],
+                }
+            )
         return {"runs": runs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"GitHub API取得失敗: {str(e)}")
+
 
 @app.get("/api/ci/runs/{run_id}/jobs")
 async def get_ci_jobs(run_id: int):
     """指定したCI実行のジョブ・ステップ詳細を取得する"""
     token = os.environ.get("GITHUB_TOKEN", "")
     url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/runs/{run_id}/jobs"
-    req = urllib.request.Request(url, headers={
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "aichat-ci-viewer",
-        **({"Authorization": f"Bearer {token}"} if token else {})
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "aichat-ci-viewer",
+            **({"Authorization": f"Bearer {token}"} if token else {}),
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=10) as res:
             data = json_module.loads(res.read())
@@ -331,32 +365,38 @@ async def get_ci_jobs(run_id: int):
         for j in data.get("jobs", []):
             steps = []
             for s in j.get("steps", []):
-                steps.append({
-                    "name": s["name"],
-                    "status": s["status"],
-                    "conclusion": s["conclusion"],
-                    "number": s["number"],
-                    "started_at": s.get("started_at"),
-                    "completed_at": s.get("completed_at"),
-                })
-            jobs.append({
-                "id": j["id"],
-                "name": j["name"],
-                "status": j["status"],
-                "conclusion": j["conclusion"],
-                "started_at": j.get("started_at"),
-                "completed_at": j.get("completed_at"),
-                "html_url": j["html_url"],
-                "steps": steps,
-            })
+                steps.append(
+                    {
+                        "name": s["name"],
+                        "status": s["status"],
+                        "conclusion": s["conclusion"],
+                        "number": s["number"],
+                        "started_at": s.get("started_at"),
+                        "completed_at": s.get("completed_at"),
+                    }
+                )
+            jobs.append(
+                {
+                    "id": j["id"],
+                    "name": j["name"],
+                    "status": j["status"],
+                    "conclusion": j["conclusion"],
+                    "started_at": j.get("started_at"),
+                    "completed_at": j.get("completed_at"),
+                    "html_url": j["html_url"],
+                    "steps": steps,
+                }
+            )
         return {"jobs": jobs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"GitHub API取得失敗: {str(e)}")
+
 
 @app.get("/api/ci/runs/{run_id}/logs/{job_id}")
 async def get_ci_logs(run_id: int, job_id: int):
     """指定したジョブのログを取得する"""
     import urllib.parse
+
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:
         raise HTTPException(status_code=401, detail="GITHUB_TOKENが設定されていません")
@@ -368,9 +408,9 @@ async def get_ci_logs(run_id: int, job_id: int):
 
     try:
         # まずGitHub APIにリクエスト（リダイレクトを自動追跡）
-        #import http.client
-        #import ssl
-        #ctx = ssl.create_default_context()
+        # import http.client
+        # import ssl
+        # ctx = ssl.create_default_context()
 
         headers = {
             "Accept": "application/vnd.github+json",
@@ -382,7 +422,9 @@ async def get_ci_logs(run_id: int, job_id: int):
         class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
             def redirect_request(self, req, fp, code, msg, headers, newurl):
                 # リダイレクト先にはAuthorizationヘッダーを付けない（Azure Blob Storage）
-                return urllib.request.Request(newurl, headers={"User-Agent": "aichat-ci-viewer"})
+                return urllib.request.Request(
+                    newurl, headers={"User-Agent": "aichat-ci-viewer"}
+                )
 
         opener = urllib.request.build_opener(NoRedirectHandler())
         req = urllib.request.Request(url, headers=headers)
@@ -392,10 +434,12 @@ async def get_ci_logs(run_id: int, job_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"ログ取得失敗: {str(e)}")
 
+
 # CI結果画面
 @app.get("/api/ci", response_class=HTMLResponse)
 async def read_ci(request: Request):
     return templates.TemplateResponse(request, "ci.html")
+
 
 # PDFインデクサー画面
 @app.get("/api/indexer", response_class=HTMLResponse)

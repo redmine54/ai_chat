@@ -10,4 +10,6 @@ jinja2
 python-multipart
 pytest
 ruff>=0.6.0
-
+pytest-cov
+httpx
+pytest-mock

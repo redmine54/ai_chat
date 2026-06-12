@@ -228,8 +228,7 @@
                   startElapsedTimer('elapsed-' + job.id + '-' + step.number, step.started_at);
                   if (sDur) sDur.style.display = 'none';
 
-                  // ログプレビュー更新
-                  fetchLogPreview(runId, job.id, step.number);
+                  // 実行中のログはGitHub仕様上取得不可のためスキップ
                 } else if (step.status === 'completed') {
                   // 完了: 経過時間を止めて所要時間に切り替え
                   var elapsedId = 'elapsed-' + job.id + '-' + step.number;
@@ -298,7 +297,7 @@
         job.steps.forEach(function(step) {
           if (step.status === 'in_progress' && step.started_at) {
             startElapsedTimer('elapsed-' + job.id + '-' + step.number, step.started_at);
-            fetchLogPreview(runId, job.id, step.number);
+            // 実行中ログはGitHub仕様上取得不可
           }
         });
       }
