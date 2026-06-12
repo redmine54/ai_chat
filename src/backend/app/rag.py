@@ -169,10 +169,7 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
     from typing import Sequence
 
     query_typed: list[Sequence[float]] = [list(query_embedding)]
-    results = collection.query(
-        query_embeddings=query_typed,
-        n_results=5
-    )
+    results = collection.query(query_embeddings=query_typed, n_results=5)
 
     context = "\n".join(results["documents"][0]) if results["documents"] else ""
 
