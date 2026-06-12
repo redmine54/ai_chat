@@ -75,7 +75,11 @@ def get_embedding(text: str, retry: int = 3) -> list:
             embeddings = result.embeddings
             if embeddings is None:
                 raise ValueError("embeddingsがNoneです")
-            return list(embeddings[0].values)
+            # 修正後: Noneチェックを追加
+            vals = embeddings[0].values
+            if vals is None:
+                raise ValueError("embeddingsのvaluesがNoneです")
+            return list(vals)
 
         except Exception as e:
             print(f"ベクトル化エラー（試行{attempt + 1}/{retry}）: {e}")
@@ -83,6 +87,8 @@ def get_embedding(text: str, retry: int = 3) -> list:
                 time.sleep(2**attempt)
             else:
                 raise
+    raise RuntimeError("ベクトル化に失敗しました")  # ← 追加
+
 
 
 # -----------------------------
@@ -160,7 +166,13 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
     use_model = model or GENERATION_MODEL
     query_embedding = get_embedding(user_query)
 
-    results = collection.query(query_embeddings=[list(query_embedding)], n_results=5)
+    # 修正後
+    from typing import Sequence
+    query_typed: list[Sequence[float]] = [list(query_embedding)]
+    results = collection.query(
+        query_embeddings=query_typed, n_results=5
+    )
+
 
     context = "\n".join(results["documents"][0]) if results["documents"] else ""
 
