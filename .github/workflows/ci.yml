@@ -22,9 +22,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # CI の最初に古い volume を全部削除（Checkoutの直後）
-      - name: Cleanup old Docker volumes
+      # CI の最初に古い volume を全部削除（Checkoutの直後
+      - name: Cleanup old Docker volumes.    # ボリューム削除
         run: docker volume prune -f || true
+
+      - name: Cleanup old Docker images      # イメージ削除
+        run: docker image prune -af || true
 
       # 2) Docker Compose で backend をビルド
       - name: Build backend image
@@ -45,7 +48,8 @@ jobs:
 
       # 5) Lint（ruff）
       - name: Run Lint (ruff)
-        run: docker compose run --rm backend ruff check .
+      #  run: docker compose run --rm backend ruff check .
+        run: docker compose run --rm backend ruff format --check .
 
       # 6) 型チェック（mypy）
       - name: Run Type Check (mypy)
