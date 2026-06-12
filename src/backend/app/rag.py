@@ -160,9 +160,7 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
     use_model = model or GENERATION_MODEL
     query_embedding = get_embedding(user_query)
 
-    results = collection.query(
-        query_embeddings=[list(query_embedding)], n_results=5
-    )
+    results = collection.query(query_embeddings=[list(query_embedding)], n_results=5)
 
     context = "\n".join(results["documents"][0]) if results["documents"] else ""
 
