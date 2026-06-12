@@ -90,7 +90,6 @@ def get_embedding(text: str, retry: int = 3) -> list:
     raise RuntimeError("ベクトル化に失敗しました")  # ← 追加
 
 
-
 # -----------------------------
 # PDFテキスト抽出
 # -----------------------------
@@ -168,11 +167,12 @@ def answer_with_rag(user_query: str, model: Optional[str] = None) -> str:
 
     # 修正後
     from typing import Sequence
+
     query_typed: list[Sequence[float]] = [list(query_embedding)]
     results = collection.query(
-        query_embeddings=query_typed, n_results=5
+        query_embeddings=query_typed,
+        n_results=5
     )
-
 
     context = "\n".join(results["documents"][0]) if results["documents"] else ""
 
