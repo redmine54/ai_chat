@@ -18,7 +18,7 @@ jobs:
         working-directory: .
 
     steps:
-      # 1) コード取得（Checkout）
+      # 1) コード取得
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -30,26 +30,47 @@ jobs:
       - name: Install dependencies
         run: docker compose run --rm backend pip install -r requirements.txt
 
-      # 4) Lint（ruff）
+      # 4) Format チェック（ruff fmt --check）
+      - name: Run Format Check (ruff fmt)
+        run: docker compose run --rm backend ruff fmt --check .
+
+      # 5) Lint（ruff）
       - name: Run Lint (ruff)
         run: docker compose run --rm backend ruff check .
 
-      # 5) Unit Test
-      - name: Run unit tests
-        run: |
-          docker compose run --rm backend python -m pytest tests/unit/ -v || \
-          echo "⚠️ テストコードがありません（tests/unit/）"
+      # 6) 型チェック（mypy）
+      - name: Run Type Check (mypy)
+        run: docker compose run --rm backend mypy app
 
-      # 6) Integration Test
+      # 7) Unit Test（カバレッジ付き）
+      # coverage.xml を生成して GitHub Actions にアップロード
+      - name: Run unit tests with coverage
+        run: |
+          docker compose run --rm backend pytest tests/unit/ -v \
+            --cov=app --cov-report=xml --cov-report=term || \
+            echo "⚠️ Unit test がありません"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+      # 8) Integration Test
       - name: Run integration tests
         run: |
-          docker compose run --rm backend python -m pytest tests/integration/ -v || \
-          echo "⚠️ テストコードがありません（tests/integration/）"
+          docker compose run --rm backend pytest tests/integration/ -v || \
+          echo "⚠️ Integration test がありません"
 
-      # 7) K8s 検証（compose の場合はスキップ）
+      # 9) Docker イメージ脆弱性チェック（Trivy）
+      - name: Security Scan (Trivy)
+        run: |
+          trivy image --exit-code 1 --severity HIGH,CRITICAL backend:latest
+
+      # 10) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
         if: env.DEPLOY_ENV == 'compose'
-        run: echo "✅ docker composeモードのためK8s検証をスキップします"
+        run: echo "compose モードのため K8s 検証をスキップ"
 
       - name: Validate K8s manifests (minikube)
         if: env.DEPLOY_ENV == 'minikube'
