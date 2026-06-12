@@ -29,6 +29,10 @@ jobs:
       - name: Install dependencies
         run: docker compose run --rm backend pip install -r requirements.txt
 
+      - name: Check ruff version
+        run: docker compose run --rm backend ruff --version
+
+
       # 4) Format チェック（ruff fmt --check）
       - name: Run Format Check (ruff fmt)
         run: docker compose run --rm backend ruff fmt --check .
