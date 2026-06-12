@@ -9,6 +9,12 @@ from starlette.requests import Request as StarletteRequest
 import os
 import glob
 from pathlib import Path
+import asyncio
+from fastapi.responses import StreamingResponse
+import urllib.request
+import json as json_module
+
+
 
 # /app/app/main.py → /app/app → /app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -221,8 +227,6 @@ async def read_specs(request: Request):
     return templates.TemplateResponse(request, "specs.html")
 
 
-import asyncio
-from fastapi.responses import StreamingResponse
 
 # 実行許可スクリプト一覧（セキュリティのため明示的に許可）
 ALLOWED_SCRIPTS = [
@@ -277,8 +281,6 @@ async def read_utilities(request: Request):
     return templates.TemplateResponse(request, "utilities.html")
 
 
-import urllib.request
-import json as json_module
 
 GITHUB_REPO = "redmine54/ai_chat"
 
@@ -366,7 +368,7 @@ async def get_ci_logs(run_id: int, job_id: int):
 
     try:
         # まずGitHub APIにリクエスト（リダイレクトを自動追跡）
-        import http.client
+        #import http.client
         import ssl
 
         ctx = ssl.create_default_context()
