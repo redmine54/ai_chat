@@ -2,7 +2,6 @@
 pytest設定ファイル
 全テスト共通のfixture・設定
 """
-
 import os
 import sys
 

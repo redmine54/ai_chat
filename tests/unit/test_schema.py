@@ -43,7 +43,7 @@ def test_index_request_force_default_false():
     from app.main import IndexRequest
 
     req = IndexRequest(filename="test.pdf")
-    assert req.force !
+    assert not req.force
 
 
 def test_index_request_force_true():
@@ -51,7 +51,7 @@ def test_index_request_force_true():
     from app.main import IndexRequest
 
     req = IndexRequest(filename="test.pdf", force=True)
-    assert req.force 
+    assert req.force
 
 
 def test_delete_request_valid():
