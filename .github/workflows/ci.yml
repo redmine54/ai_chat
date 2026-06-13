@@ -9,6 +9,7 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   DEPLOY_ENV: compose
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}  # ← ここに追加
 
 jobs:
   ci:
