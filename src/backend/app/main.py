@@ -17,7 +17,7 @@ import json as json_module
 
 # /app/app/main.py → /app/app → /app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-#BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
@@ -79,9 +79,11 @@ class IndexRequest(BaseModel):
     filename: str  # data/配下のファイル名
     force: bool = False  # 強制再登録フラグ
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):

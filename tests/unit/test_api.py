@@ -21,12 +21,15 @@ def client():
                     # main.pyをインポートせずにパスだけ確認
                     import importlib.util
                     import os
+
                     spec = importlib.util.find_spec("app.main")
                     main_file = spec.origin
                     base_dir = os.path.dirname(os.path.dirname(main_file))
                     print("__file__ =", main_file)
                     print("BASE_DIR =", base_dir)
-                    print("docs exists =", os.path.isdir(os.path.join(base_dir, "docs")))
+                    print(
+                        "docs exists =", os.path.isdir(os.path.join(base_dir, "docs"))
+                    )
 
                     from app.main import app
 
