@@ -89,7 +89,7 @@ jobs:
       # 15) Docker イメージ脆弱性チェック（Trivy）
       - name: Security Scan (Trivy:Docker イメージ脆弱性チェック)
         run: |
-          DOCKER_HOST=unix:///var/run/docker.sock \
+          DOCKER_HOST=unix://$HOME/.docker/run/docker.sock \
           trivy image --exit-code 1 --severity HIGH,CRITICAL ai_chat-backend:latest
 
       # 16) K8s 検証（compose の場合はスキップ）
