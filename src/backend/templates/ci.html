@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CI結果</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    :root { --bg-color:#faf8f5; --text-color:#333; --accent-color:#8fa89b; --accent-hover:#768e82; --border-color:#d1cbc4; --white:#fff; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; color:var(--text-color); background:var(--bg-color); }
+    h1 { font-size:20px; margin-bottom:8px; border-bottom:2px solid var(--accent-color); padding-bottom:10px; }
+    .subtitle { color:#777; margin-bottom:20px; font-size:13px; }
+    .content { padding:30px; max-width:1000px; }
+    .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+    .btn { padding:6px 16px; background:var(--accent-color); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
+    .btn:hover { background:var(--accent-hover); }
+    .run-list { display:flex; flex-direction:column; gap:8px; }
+    .run-card { background:var(--white); border:1px solid var(--border-color); border-radius:6px; overflow:hidden; }
+    .run-header { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; transition:background 0.2s; }
+    .run-header:hover { background:#f5f2ee; }
+    .run-status-icon { font-size:18px; min-width:24px; text-align:center; }
+    .run-info { flex:1; min-width:0; }
+    .run-title { font-weight:bold; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .run-meta { font-size:11px; color:#888; margin-top:2px; }
+    .run-badge { font-size:11px; padding:2px 10px; border-radius:10px; font-weight:bold; white-space:nowrap; }
+    .badge-success  { background:#e8f5e9; color:#2e7d32; }
+    .badge-failure  { background:#ffebee; color:#c62828; }
+    .badge-running  { background:#e3f2fd; color:#1565c0; }
+    .badge-cancelled{ background:#f5f5f5; color:#757575; }
+    .badge-skipped  { background:#f5f5f5; color:#9e9e9e; }
+    .badge-none     { background:#f5f5f5; color:#9e9e9e; }
+    .run-chevron { color:#aaa; transition:transform 0.2s; margin-left:4px; }
+    .run-chevron.open { transform:rotate(90deg); }
+    .run-detail { display:none; border-top:1px solid var(--border-color); padding:16px; background:#fdfcfb; }
+    .run-detail.open { display:block; }
+    .job-card { margin-bottom:12px; border:1px solid var(--border-color); border-radius:4px; overflow:hidden; }
+    .job-header { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#f0ede9; cursor:pointer; }
+    .job-header:hover { background:#e8e4df; }
+    .job-name { flex:1; font-size:13px; font-weight:bold; }
+    .step-list { display:none; padding:8px 14px; }
+    .step-list.open { display:block; }
+    .step-row { display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #f0ede9; font-size:12px; }
+    .step-row:last-child { border-bottom:none; }
+    .step-icon { min-width:16px; text-align:center; }
+    .step-name { flex:1; color:#555; }
+    .step-duration { font-size:11px; color:#999; white-space:nowrap; margin-left:4px; }
+    .step-elapsed { font-size:11px; color:#1565c0; white-space:nowrap; font-family:monospace; }
+    .step-log-preview { margin:2px 0 6px 26px; padding:8px 10px; background:#1e1e1e; border-radius:4px; font-family:monospace; font-size:11px; color:#f0f0f0; white-space:pre-wrap; word-break:break-all; max-height:100px; overflow-y:auto; }
+    .log-err  { color:#ff6b6b; }
+    .log-ok   { color:#69ff85; }
+    .log-info { color:#64d8ff; }
+    .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; }
+    .modal-overlay.active { display:flex; }
+    .modal { background:#1e1e1e; border-radius:8px; width:900px; max-width:95vw; max-height:85vh; display:flex; flex-direction:column; }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#2d2d2d; border-radius:8px 8px 0 0; }
+    .modal-title { color:#f0f0f0; font-size:13px; font-family:monospace; }
+    .modal-close { background:#e53935; color:#fff; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:13px; }
+    .log-area { flex:1; overflow-y:auto; padding:16px; font-family:monospace; font-size:12px; color:#f0f0f0; white-space:pre-wrap; word-break:break-all; max-height:70vh; }
+    .modal-footer { padding:10px 16px; background:#2d2d2d; border-radius:0 0 8px 8px; display:flex; justify-content:flex-end; }
+    .btn-close-modal { padding:6px 16px; background:#555; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    .github-link { color:#4a90d9; text-decoration:none; font-size:12px; }
+    .github-link:hover { text-decoration:underline; }
+    .loading { color:#888; font-size:13px; padding:20px 0; }
+    .auto-refresh-badge { font-size:11px; color:#1565c0; background:#e3f2fd; padding:2px 8px; border-radius:10px; }
+  </style>
+</head>
+<body>
+  <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <span style="color:#aaa;font-size:13px;margin-right:8px;">🔗 メニュー:</span>
+    <a href="/api/chat/ui" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">💬 チャット</a>
+    <a href="/api/indexer" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📄 PDFインデクサー</a>
+    <a href="/api/specs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📚 ドキュメント</a>
+    <a href="/swagger/docs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🔧 API</a>
+    <a href="/api/utilities" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🛠️ shユーティリティ</a>
+    <a href="/api/ci" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">⚙️ CI結果</a>
+  </nav>
+
+  <div class="content">
+    <h1><i class="fa-solid fa-circle-check"></i> CI結果</h1>
+    <p class="subtitle">GitHub Actions の最新CI実行結果（リポジトリ: redmine54/ai_chat）</p>
+    <div class="toolbar">
+      <button class="btn" id="btnRefresh"><i class="fa-solid fa-rotate-right"></i> 更新</button>
+      <span id="lastUpdated" style="font-size:12px;color:#888;"></span>
+      <span id="autoRefreshBadge" class="auto-refresh-badge" style="display:none;"><i class="fa-solid fa-spinner fa-spin"></i> 自動更新中</span>
+    </div>
+    <div id="runList" class="run-list">
+      <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">ログ</span>
+        <button class="modal-close" id="modalCloseBtn">✕</button>
+      </div>
+      <div class="log-area" id="logArea"></div>
+      <div class="modal-footer"><button class="btn-close-modal" id="modalFooterBtn">閉じる</button></div>
+    </div>
+  </div>
+
+  <script>
+    var autoRefreshTimer = null;
+    var elapsedTimers = {};   // 経過時間タイマー
+    var openDetails = {};
+    var openSteps = {};
+    var runsData = {};        // runデータのキャッシュ
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function conclusionIcon(conclusion, status) {
+      if (status === 'in_progress' || status === 'queued') return '<i class="fa-solid fa-spinner fa-spin" style="color:#1565c0"></i>';
+      switch(conclusion) {
+        case 'success':   return '<i class="fa-solid fa-circle-check" style="color:#2e7d32"></i>';
+        case 'failure':   return '<i class="fa-solid fa-circle-xmark" style="color:#c62828"></i>';
+        case 'cancelled': return '<i class="fa-solid fa-ban" style="color:#757575"></i>';
+        case 'skipped':   return '<i class="fa-solid fa-forward" style="color:#9e9e9e"></i>';
+        default:          return '<i class="fa-solid fa-circle-minus" style="color:#9e9e9e"></i>';
+      }
+    }
+
+    function conclusionBadge(conclusion, status) {
+      if (status === 'queued') return '<span class="run-badge badge-running"><i class="fa-solid fa-clock"></i> 待機中</span>';
+      if (status === 'in_progress') return '<span class="run-badge badge-running"><i class="fa-solid fa-spinner fa-spin"></i> 実行中</span>';
+      switch(conclusion) {
+        case 'success':   return '<span class="run-badge badge-success">✅ SUCCESS</span>';
+        case 'failure':   return '<span class="run-badge badge-failure">❌ FAILURE</span>';
+        case 'cancelled': return '<span class="run-badge badge-cancelled">⏹ CANCELLED</span>';
+        case 'skipped':   return '<span class="run-badge badge-skipped">⏭ SKIPPED</span>';
+        default:          return '<span class="run-badge badge-none">— ' + (conclusion||'NONE') + '</span>';
+      }
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleString('ja-JP');
+    }
+
+    // 所要時間を計算
+    function calcDuration(startedAt, completedAt) {
+      if (!startedAt) return '';
+      var start = new Date(startedAt).getTime();
+      var end = completedAt ? new Date(completedAt).getTime() : Date.now();
+      var sec = Math.round((end - start) / 1000);
+      if (sec < 60) return sec + 's';
+      return Math.floor(sec/60) + 'm ' + (sec%60) + 's';
+    }
+
+    // 経過時間タイマーを開始（実行中ステップ用）
+    function startElapsedTimer(elemId, startedAt) {
+      if (elapsedTimers[elemId]) clearInterval(elapsedTimers[elemId]);
+      elapsedTimers[elemId] = setInterval(function() {
+        var el = document.getElementById(elemId);
+        if (!el) { clearInterval(elapsedTimers[elemId]); delete elapsedTimers[elemId]; return; }
+        el.textContent = calcDuration(startedAt, null);
+      }, 1000);
+    }
+
+    function stopAllElapsedTimers() {
+      Object.keys(elapsedTimers).forEach(function(k) { clearInterval(elapsedTimers[k]); });
+      elapsedTimers = {};
+    }
+
+    function colorizeLog(text) {
+      return text.split('\n').map(function(line) {
+        var e = escHtml(line);
+        if (e.match(/[Ee]rror|FAILED|FAILURE/)) return '<span class="log-err">'+e+'</span>';
+        if (e.match(/PASSED|passed|[Ss]uccess/)) return '<span class="log-ok">'+e+'</span>';
+        if (e.match(/===|---|###/)) return '<span class="log-info">'+e+'</span>';
+        return e;
+      }).join('\n');
+    }
+
+    // ジョブ詳細を差分更新（チラつき防止）
+    async function updateJobDetail(runId, isInProgress) {
+      var detailEl = document.getElementById('detail-' + runId);
+      if (!detailEl || !detailEl.classList.contains('open')) return;
+
+      try {
+        var res = await fetch('/api/ci/runs/' + runId + '/jobs');
+        var d = await res.json();
+        if (!res.ok) return;
+
+        // detailElが空の場合は全レンダリング、そうでなければ差分更新
+        var existingJobCard = document.getElementById('jobcard-' + d.jobs[0].id);
+        if (!existingJobCard) {
+          detailEl.innerHTML = '';
+          d.jobs.forEach(function(job) {
+            renderJobCard(detailEl, runId, job, isInProgress);
+          });
+          return;
+        }
+
+        d.jobs.forEach(function(job) {
+          var jobCard = document.getElementById('jobcard-' + job.id);
+          if (!jobCard) {
+            renderJobCard(detailEl, runId, job, isInProgress);
+          } else {
+            // 差分更新: アイコンとバッジのみ更新
+            var iconEl = jobCard.querySelector('.job-icon');
+            var badgeEl = jobCard.querySelector('.job-badge');
+            if (iconEl) iconEl.innerHTML = conclusionIcon(job.conclusion, job.status);
+            if (badgeEl) badgeEl.innerHTML = conclusionBadge(job.conclusion, job.status);
+
+            // ステップを更新
+            job.steps.forEach(function(step) {
+              var stepRow = document.getElementById('steprow-' + job.id + '-' + step.number);
+              if (stepRow) {
+                var sIcon = stepRow.querySelector('.step-icon');
+                var sBadge = stepRow.querySelector('.step-badge');
+                var sDur = stepRow.querySelector('.step-duration');
+                var sElapsed = stepRow.querySelector('.step-elapsed');
+                if (sIcon) sIcon.innerHTML = conclusionIcon(step.conclusion, step.status);
+                if (sBadge) sBadge.innerHTML = conclusionBadge(step.conclusion, step.status);
+
+                if (step.status === 'in_progress' && step.started_at) {
+                  // 経過時間タイマー表示
+                  if (sElapsed) { sElapsed.style.display='inline'; }
+                  else {
+                    var el = document.createElement('span');
+                    el.className = 'step-elapsed';
+                    el.id = 'elapsed-' + job.id + '-' + step.number;
+                    stepRow.appendChild(el);
+                  }
+                  startElapsedTimer('elapsed-' + job.id + '-' + step.number, step.started_at);
+                  if (sDur) sDur.style.display = 'none';
+
+                  // 実行中のログはGitHub仕様上取得不可のためスキップ
+                } else if (step.status === 'completed') {
+                  // 完了: 経過時間を止めて所要時間に切り替え
+                  var elapsedId = 'elapsed-' + job.id + '-' + step.number;
+                  if (elapsedTimers[elapsedId]) { clearInterval(elapsedTimers[elapsedId]); delete elapsedTimers[elapsedId]; }
+                  var elEl = document.getElementById(elapsedId);
+                  if (elEl) elEl.style.display = 'none';
+                  if (sDur) { sDur.textContent = calcDuration(step.started_at, step.completed_at); sDur.style.display = 'inline'; }
+                  // ログプレビューを削除
+                  var preview = document.getElementById('logpreview-' + job.id + '-' + step.number);
+                  if (preview) preview.remove();
+                }
+              }
+            });
+          }
+        });
+      } catch(e) {}
+    }
+
+    function renderJobCard(container, runId, job, isInProgress) {
+      var isStepOpen = openSteps[job.id] || job.status === 'in_progress';
+      var div = document.createElement('div');
+      div.className = 'job-card';
+      div.id = 'jobcard-' + job.id;
+
+      var stepsHtml = '';
+      job.steps.forEach(function(step) {
+        var isStepInProgress = step.status === 'in_progress';
+        var durHtml = '';
+        var elapsedHtml = '';
+        if (isStepInProgress && step.started_at) {
+          elapsedHtml = '<span class="step-elapsed" id="elapsed-' + job.id + '-' + step.number + '">' + calcDuration(step.started_at, null) + '</span>';
+          durHtml = '<span class="step-duration" style="display:none"></span>';
+        } else if (step.started_at && step.completed_at) {
+          durHtml = '<span class="step-duration">' + calcDuration(step.started_at, step.completed_at) + '</span>';
+        }
+
+        stepsHtml +=
+          '<div class="step-row" id="steprow-' + job.id + '-' + step.number + '">' +
+            '<span class="step-icon">' + conclusionIcon(step.conclusion, step.status) + '</span>' +
+            '<span class="step-name">' + escHtml(step.name) + '</span>' +
+            '<span class="step-badge">' + conclusionBadge(step.conclusion, step.status) + '</span>' +
+            elapsedHtml + durHtml +
+          '</div>';
+
+        if (isStepInProgress) {
+          stepsHtml += '<div class="step-log-preview" id="logpreview-' + job.id + '-' + step.number + '"><span style="color:#888">ログ取得中...</span></div>';
+        }
+      });
+
+      div.innerHTML =
+        '<div class="job-header" onclick="toggleSteps(' + job.id + ')">' +
+          '<span class="job-icon">' + conclusionIcon(job.conclusion, job.status) + '</span>' +
+          '<span class="job-name">' + escHtml(job.name) + '</span>' +
+          '<span class="job-badge">' + conclusionBadge(job.conclusion, job.status) + '</span>' +
+          (job.conclusion === 'failure'
+            ? '<button class="btn" style="font-size:11px;padding:3px 10px;margin-left:8px;" onclick="event.stopPropagation();loadLog(' + runId + ',' + job.id + ',\'' + escHtml(job.name) + '\')"><i class="fa-solid fa-file-lines"></i> ログ</button>'
+            : '') +
+          '<span style="color:#aaa;margin-left:4px;"><i class="fa-solid fa-chevron-right"></i></span>' +
+        '</div>' +
+        '<div class="step-list ' + (isStepOpen?'open':'') + '" id="steps-' + job.id + '">' + stepsHtml + '</div>';
+
+      container.appendChild(div);
+
+      // 実行中ステップの経過時間タイマーとログプレビューを開始
+      if (job.status === 'in_progress') {
+        job.steps.forEach(function(step) {
+          if (step.status === 'in_progress' && step.started_at) {
+            startElapsedTimer('elapsed-' + job.id + '-' + step.number, step.started_at);
+            // 実行中ログはGitHub仕様上取得不可
+          }
+        });
+      }
+    }
+
+    async function fetchLogPreview(runId, jobId, stepNumber) {
+      var previewEl = document.getElementById('logpreview-' + jobId + '-' + stepNumber);
+      if (!previewEl) return;
+      try {
+        var res = await fetch('/api/ci/runs/' + runId + '/logs/' + jobId);
+        if (!res.ok) {
+          previewEl.innerHTML = '<span style="color:#888"><i class="fa-solid fa-spinner fa-spin"></i> ログ準備中 (' + res.status + ')...</span>';
+          return;
+        }
+        var logData = await res.json();
+        if (!logData.logs) { previewEl.innerHTML = '<span style="color:#888">ログなし</span>'; return; }
+        var lines = logData.logs.split('\n').filter(function(l) { return l.trim(); });
+        var last10 = lines.slice(-10).join('\n');
+        previewEl.innerHTML = colorizeLog(last10);
+        previewEl.scrollTop = previewEl.scrollHeight;
+      } catch(e) {
+        previewEl.innerHTML = '<span style="color:#888"><i class="fa-solid fa-spinner fa-spin"></i> ログ準備中...</span>';
+      }
+    }
+
+    async function loadRuns() {
+      if (autoRefreshTimer) { clearTimeout(autoRefreshTimer); autoRefreshTimer = null; }
+      stopAllElapsedTimers();
+
+      var list = document.getElementById('runList');
+      var isFirstLoad = list.children.length === 0 || list.children[0].className === 'loading';
+      if (isFirstLoad) {
+        list.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</div>';
+      }
+
+      try {
+        var res = await fetch('/api/ci/runs');
+        var d = await res.json();
+        if (!res.ok) throw new Error(d.detail);
+        if (!d.runs.length) { list.innerHTML = '<div class="loading">CI実行履歴がありません</div>'; return; }
+
+        var hasInProgress = d.runs.some(function(r) { return r.status === 'in_progress' || r.status === 'queued'; });
+
+        // 既存カードがあれば差分更新、なければ全再描画
+        var existingCards = list.querySelectorAll('.run-card');
+        if (existingCards.length === 0) {
+          // 全再描画
+          list.innerHTML = '';
+          d.runs.forEach(function(run) {
+            var isInProgress = run.status === 'in_progress' || run.status === 'queued';
+            var isOpen = openDetails[run.id] || run.status === 'in_progress';
+            var card = document.createElement('div');
+            card.className = 'run-card';
+            card.id = 'runcard-' + run.id;
+            card.innerHTML =
+              '<div class="run-header" onclick="toggleDetail(' + run.id + ')">' +
+                '<span class="run-status-icon" id="runicon-' + run.id + '">' + conclusionIcon(run.conclusion, run.status) + '</span>' +
+                '<div class="run-info">' +
+                  '<div class="run-title">' + escHtml(run.commit_msg || run.name) + '</div>' +
+                  '<div class="run-meta">' +
+                    '<i class="fa-solid fa-code-branch"></i> ' + escHtml(run.branch) +
+                    ' &nbsp;|&nbsp; <i class="fa-solid fa-code-commit"></i> ' + run.commit +
+                    ' &nbsp;|&nbsp; <i class="fa-regular fa-clock"></i> ' + formatDate(run.created_at) +
+                    ' &nbsp;|&nbsp; <a class="github-link" href="' + run.html_url + '" target="_blank" onclick="event.stopPropagation()"><i class="fa-brands fa-github"></i> GitHub</a>' +
+                  '</div>' +
+                '</div>' +
+                '<span id="runbadge-' + run.id + '">' + conclusionBadge(run.conclusion, run.status) + '</span>' +
+                '<span class="run-chevron ' + (isOpen?'open':'') + '" id="chevron-' + run.id + '"><i class="fa-solid fa-chevron-right"></i></span>' +
+              '</div>' +
+              '<div class="run-detail ' + (isOpen?'open':'') + '" id="detail-' + run.id + '"></div>';
+            list.appendChild(card);
+
+            if (isOpen) {
+              loadJobDetail(run.id, isInProgress);
+            }
+          });
+        } else {
+          // 差分更新: 新規runは先頭に追加、既存runはアイコン・バッジのみ更新
+          d.runs.forEach(function(run) {
+            var existingCard = document.getElementById('runcard-' + run.id);
+            if (!existingCard) {
+              // 新規runを先頭に挿入
+              var isInProgress = run.status === 'in_progress' || run.status === 'queued';
+              var isOpen = isInProgress;
+              var card = document.createElement('div');
+              card.className = 'run-card';
+              card.id = 'runcard-' + run.id;
+              card.innerHTML =
+                '<div class="run-header" onclick="toggleDetail(' + run.id + ')">' +
+                  '<span class="run-status-icon" id="runicon-' + run.id + '">' + conclusionIcon(run.conclusion, run.status) + '</span>' +
+                  '<div class="run-info">' +
+                    '<div class="run-title">' + escHtml(run.commit_msg || run.name) + '</div>' +
+                    '<div class="run-meta">' +
+                      '<i class="fa-solid fa-code-branch"></i> ' + escHtml(run.branch) +
+                      ' &nbsp;|&nbsp; <i class="fa-solid fa-code-commit"></i> ' + run.commit +
+                      ' &nbsp;|&nbsp; <i class="fa-regular fa-clock"></i> ' + formatDate(run.created_at) +
+                      ' &nbsp;|&nbsp; <a class="github-link" href="' + run.html_url + '" target="_blank" onclick="event.stopPropagation()"><i class="fa-brands fa-github"></i> GitHub</a>' +
+                    '</div>' +
+                  '</div>' +
+                  '<span id="runbadge-' + run.id + '">' + conclusionBadge(run.conclusion, run.status) + '</span>' +
+                  '<span class="run-chevron ' + (isOpen?'open':'') + '" id="chevron-' + run.id + '"><i class="fa-solid fa-chevron-right"></i></span>' +
+                '</div>' +
+                '<div class="run-detail ' + (isOpen?'open':'') + '" id="detail-' + run.id + '"></div>';
+              list.insertBefore(card, list.firstChild);
+              if (isOpen) loadJobDetail(run.id, isInProgress);
+            } else {
+              // 既存run: アイコン・バッジのみ更新
+              var iconEl = document.getElementById('runicon-' + run.id);
+              var badgeEl = document.getElementById('runbadge-' + run.id);
+              if (iconEl) iconEl.innerHTML = conclusionIcon(run.conclusion, run.status);
+              if (badgeEl) badgeEl.innerHTML = conclusionBadge(run.conclusion, run.status);
+
+              var isInProgress = run.status === 'in_progress' || run.status === 'queued';
+              var detailEl = document.getElementById('detail-' + run.id);
+              if (detailEl && detailEl.classList.contains('open')) {
+                if (detailEl.children.length === 0) {
+                  loadJobDetail(run.id, isInProgress);
+                } else {
+                  updateJobDetail(run.id, isInProgress);
+                }
+              }
+            }
+          });
+        }
+
+        document.getElementById('lastUpdated').textContent = '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
+        if (hasInProgress) {
+          document.getElementById('autoRefreshBadge').style.display = 'inline';
+          if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
+          autoRefreshTimer = setTimeout(loadRuns, 10000);
+        } else {
+          document.getElementById('autoRefreshBadge').style.display = 'none';
+          if (autoRefreshTimer) { clearTimeout(autoRefreshTimer); autoRefreshTimer = null; }
+        }
+      } catch(e) {
+        list.innerHTML = '<div class="loading" style="color:red">取得エラー: ' + e.message + '</div>';
+      }
+    }
+
+    async function loadJobDetail(runId, isInProgress) {
+      var detailEl = document.getElementById('detail-' + runId);
+      if (!detailEl) return;
+      detailEl.innerHTML = '';
+      try {
+        var res = await fetch('/api/ci/runs/' + runId + '/jobs');
+        var d = await res.json();
+        if (!res.ok) throw new Error(d.detail);
+        if (!d.jobs.length) {
+          detailEl.innerHTML = '<div style="color:#888;font-size:13px;padding:8px;"><i class="fa-solid fa-clock"></i> ジョブ待機中... （Runnerがジョブを受け取るまでお待ちください）</div>';
+          return;
+        }
+        d.jobs.forEach(function(job) {
+          renderJobCard(detailEl, runId, job, isInProgress);
+        });
+      } catch(e) {
+        detailEl.innerHTML = '<div style="color:#888;font-size:13px;padding:8px;"><i class="fa-solid fa-clock"></i> ジョブ情報を取得中...</div>';
+      }
+    }
+
+    function toggleDetail(runId) {
+      var detail = document.getElementById('detail-' + runId);
+      var chevron = document.getElementById('chevron-' + runId);
+      if (!detail) return;
+      var isOpen = detail.classList.contains('open');
+      if (isOpen) {
+        detail.classList.remove('open');
+        if (chevron) chevron.classList.remove('open');
+        delete openDetails[runId];
+      } else {
+        detail.classList.add('open');
+        if (chevron) chevron.classList.add('open');
+        openDetails[runId] = true;
+        if (detail.children.length === 0) {
+          loadJobDetail(runId, false);
+        }
+      }
+    }
+
+    function toggleSteps(jobId) {
+      var stepList = document.getElementById('steps-' + jobId);
+      if (!stepList) return;
+      stepList.classList.toggle('open');
+      if (stepList.classList.contains('open')) openSteps[jobId] = true;
+      else delete openSteps[jobId];
+    }
+
+    async function loadLog(runId, jobId, jobName) {
+      var logArea = document.getElementById('logArea');
+      var overlay = document.getElementById('modalOverlay');
+      document.getElementById('modalTitle').textContent = jobName;
+      logArea.innerHTML = '<span style="color:#aaa">ログ読み込み中...</span>';
+      overlay.classList.add('active');
+      try {
+        var res = await fetch('/api/ci/runs/' + runId + '/logs/' + jobId);
+        var d = await res.json();
+        if (!res.ok) { logArea.innerHTML = '<span class="log-err">エラー: ' + escHtml(d.detail) + '</span>'; return; }
+        logArea.innerHTML = colorizeLog(d.logs);
+        logArea.scrollTop = logArea.scrollHeight;
+      } catch(e) {
+        logArea.innerHTML = '<span class="log-err">取得エラー: ' + escHtml(e.message) + '</span>';
+      }
+    }
+
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('modalFooterBtn').addEventListener('click', closeModal);
+    document.getElementById('btnRefresh').addEventListener('click', loadRuns);
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+    loadRuns();
+  </script>
+</body>
+</html>

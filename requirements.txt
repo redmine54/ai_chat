@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+chromadb
+google-genai
+pypdf
+pytesseract
+pdf2image
+Pillow
+jinja2
+python-multipart
+pytest
+ruff>=0.6.0
+pytest-cov
+httpx
+mypy==1.10.0
+pytest-mock

@@ -19,13 +19,16 @@ ENV GOOGLE_API_VERSION=v1
 #RUN pip install --upgrade google-generativeai
 
 # 5. requirements.txt をコピー
-COPY src/backend/requirements.txt .
+#COPY src/backend/requirements.txt .
 
 # 6. ライブラリをインストール
-RUN pip install --no-cache-dir -r requirements.txt
+#RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # 7. バックエンドのソースコードをコピー
-COPY src/backend/ .
+COPY src/backend/app /app
+#COPY src/backend/ .
 
 # 8. tests をコピー
 COPY tests/ /app/tests/
@@ -40,4 +43,5 @@ COPY README.md /app/README.md
 EXPOSE 8000
 
 # 12. サーバー起動
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+#CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

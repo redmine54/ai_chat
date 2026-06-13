@@ -19,13 +19,18 @@ services:
       - CHROMA_HOST=vectordb
       - CHROMA_PORT=8000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
     depends_on:
       - vectordb
     volumes:
+      # backend のコードを丸ごと /app にマウント（最重要）
+      #- ./src/backend:/app
+
+      # 以下は /app 内の特定フォルダを上書きする
       - ./docs:/app/docs
       - ./src/backend/data:/app/data
-      - ./README.md:/app/README.md
       - ./src/backend/templates:/app/templates
+
     #  - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
 

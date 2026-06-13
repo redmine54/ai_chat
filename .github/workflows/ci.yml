@@ -8,36 +8,89 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  DEPLOY_ENV: compose # compose / minikube / aks
+  DEPLOY_ENV: compose
 
 jobs:
   ci:
     runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: .
 
     steps:
+      # 1) コード取得
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: |
-          docker build --no-cache -t aichat:latest \
-            -f src/backend/Dockerfile \
-            .
+      # コンテナ削除
+      - name: Cleanup old Docker containers
+        run: docker container prune -f || true
 
-      - name: Run unit tests
-        run: |
-          docker run --rm aichat:latest python -m pytest tests/unit/ -v || \
-          echo "⚠️ テストコードがありません（tests/unit/）"
 
-      - name: Run integration tests
-        run: |
-          docker run --rm aichat:latest python -m pytest tests/integration/ -v || \
-          echo "⚠️ テストコードがありません（tests/integration/）"
+      # CI の最初に古い volume を全部削除（Checkoutの直後)
+      - name: Cleanup old Docker volumes.    # ボリューム削除
+        run: docker volume prune -f || true
 
+      # イメージ削除（中間イメージも含む完全クリーンアップ）
+      - name: Cleanup ALL Docker images (including intermediate)
+        run: docker system prune -af || true
+
+
+
+      # 2) Docker Compose で backend をビルド
+      - name: Build backend image
+      #  run: docker compose build backend
+        run: docker compose build --no-cache backend
+
+      # 3) 依存関係インストール
+      - name: Install dependencies
+        run: docker compose run --rm backend pip install -r requirements.txt
+
+      - name: Check ruff version
+        run: docker compose run --rm backend ruff --version
+
+
+      # 4) Format チェック（ruff fmt --check）
+      - name: Run Format Check (ruff fmt)
+        run: docker compose run --rm backend ruff format --check .
+
+      # 5) Lint（ruff）
+      - name: Run Lint (ruff)
+        run: docker compose run --rm backend ruff check .
+
+      # 6) 型チェック（mypy）
+      - name: Run Type Check (mypy)
+        run: docker compose run --rm backend mypy .
+
+      # 7) Unit Test（カバレッジ付き）
+      # coverage.xml を生成して GitHub Actions にアップロード
+      - name: Run unit tests with coverage
+        run: |
+          docker compose run --rm backend pytest tests/unit/ -v \
+            --cov=app --cov-report=xml --cov-report=term || \
+            echo "⚠️ Unit test がありません"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+      # 8) Integration Test
+      - name: Run integration tests without coverage
+        run: |
+          docker compose run --rm backend pytest tests/integration/ -v || \
+          echo "⚠️ Integration test がありません"
+
+      # 9) Docker イメージ脆弱性チェック（Trivy）
+      - name: Security Scan (Trivy:Docker イメージ脆弱性チェック)
+        run: |
+          trivy image --exit-code 1 --severity HIGH,CRITICAL backend:latest
+
+      # 10) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
         if: env.DEPLOY_ENV == 'compose'
-        run: |
-          echo "✅ docker composeモードのためK8s検証をスキップします"
+        run: echo "compose モードのため K8s 検証をスキップ"
 
       - name: Validate K8s manifests (minikube)
         if: env.DEPLOY_ENV == 'minikube'
