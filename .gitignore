@@ -1,3 +1,6 @@
+# TEST
+_fix_tests.sh
+
 
 # Terraformの自動生成・ダウンロードフォルダ（絶対に除外）
 .terraform/

@@ -24,12 +24,14 @@ services:
       - vectordb
     volumes:
       # backend のコードを丸ごと /app にマウント（最重要）
-      #- ./src/backend:/app
+      - ./src/backend:/app
 
       # 以下は /app 内の特定フォルダを上書きする
       - ./docs:/app/docs
       - ./src/backend/data:/app/data
       - ./src/backend/templates:/app/templates
+      - ./tests:/app/tests  # ← 追加
+
 
     #  - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300

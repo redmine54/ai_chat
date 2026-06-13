@@ -57,7 +57,8 @@ def chunk_sentences(sentences, max_chars=500):
     current = ""
     for s in sentences:
         if len(current) + len(s) > max_chars:
-            chunks.append(current)
+            if current:  # ← 空文字を追加しない
+                chunks.append(current)
             current = s
         else:
             current += s
