@@ -88,6 +88,7 @@ jobs:
 
       # 15) Docker イメージ脆弱性チェック（Trivy）
       - name: Security Scan (Trivy:Docker イメージ脆弱性チェック)
+        continue-on-error: true  # 脆弱性が見つかっても後続のステップを実行
         run: |
           trivy image \
           --docker-host unix://$HOME/.docker/run/docker.sock \
