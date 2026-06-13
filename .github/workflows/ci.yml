@@ -9,7 +9,7 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   DEPLOY_ENV: compose
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}  # ← ここに追加
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
 jobs:
   ci:
@@ -23,47 +23,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # コンテナ削除
+      # 2) 古いDockerコンテナのクリーンアップ
       - name: Cleanup old Docker containers
         run: docker container prune -f || true
 
-
-      # CI の最初に古い volume を全部削除（Checkoutの直後)
-      - name: Cleanup old Docker volumes.    # ボリューム削除
+      # 3) 不要なボリュームを削除してディスク節約
+      - name: Cleanup old Docker volumes
         run: docker volume prune -f || true
 
-      # イメージ削除（中間イメージも含む完全クリーンアップ）
+      # 4) 中間イメージも含めて完全クリーンアップ
       - name: Cleanup ALL Docker images (including intermediate)
         run: docker system prune -af || true
 
-
-
-      # 2) Docker Compose で backend をビルド
+      # 5) Docker Compose で backend をビルド
       - name: Build backend image
-      #  run: docker compose build backend
+        #  run: docker compose build backend
         run: docker compose build --no-cache backend
 
-      # 3) 依存関係インストール
+      # 6) 依存関係インストール
       - name: Install dependencies
         run: docker compose run --rm backend pip install -r requirements.txt
 
+      # 7) ruff のバージョン確認（デバッグ用）
       - name: Check ruff version
         run: docker compose run --rm backend ruff --version
 
-
-      # 4) Format チェック（ruff fmt --check）
+      # 8) フォーマットチェック（ruff format --check）
       - name: Run Format Check (ruff fmt)
         run: docker compose run --rm backend ruff format --check .
 
-      # 5) Lint（ruff）
+      # 9) Lint チェック（ruff check）
       - name: Run Lint (ruff)
         run: docker compose run --rm backend ruff check .
 
-      # 6) 型チェック（mypy）
+      # 10) 型チェック（mypy）
       - name: Run Type Check (mypy)
         run: docker compose run --rm backend mypy .
 
-      # 7) Unit Test（カバレッジ付き）
+      # 11) Unit Test（カバレッジ付き）
       # coverage.xml を生成して GitHub Actions にアップロード
       - name: Run unit tests with coverage
         run: |
@@ -71,28 +68,35 @@ jobs:
             --cov=app --cov-report=xml --cov-report=term || \
             echo "⚠️ Unit test がありません"
 
+      # 12) coverage.xml をコンテナからホストにコピー
+      - name: Copy coverage report from container
+        run: |
+          docker compose run --rm backend cat /app/coverage.xml > coverage.xml || true
+
+      # 13) coverage.xml を GitHub Actions のアーティファクトとして保存
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
 
-      # 8) Integration Test
+      # 14) Integration Test
       - name: Run integration tests without coverage
         run: |
           docker compose run --rm backend pytest tests/integration/ -v || \
           echo "⚠️ Integration test がありません"
 
-      # 9) Docker イメージ脆弱性チェック（Trivy）
+      # 15) Docker イメージ脆弱性チェック（Trivy）
       - name: Security Scan (Trivy:Docker イメージ脆弱性チェック)
         run: |
           trivy image --exit-code 1 --severity HIGH,CRITICAL backend:latest
 
-      # 10) K8s 検証（compose の場合はスキップ）
+      # 16) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
         if: env.DEPLOY_ENV == 'compose'
         run: echo "compose モードのため K8s 検証をスキップ"
 
+      # 17) minikube 環境の場合のみ K8s マニフェストを検証
       - name: Validate K8s manifests (minikube)
         if: env.DEPLOY_ENV == 'minikube'
         run: |
@@ -100,6 +104,7 @@ jobs:
           find k8s/ -name "*.yaml" ! -name "kustomization.yaml" | \
             xargs kubectl apply --dry-run=client --validate=false -f
 
+      # 18) AKS 環境の場合のみ K8s マニフェストを検証
       - name: Validate K8s manifests (aks)
         if: env.DEPLOY_ENV == 'aks'
         run: |
