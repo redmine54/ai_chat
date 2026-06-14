@@ -126,10 +126,22 @@ jobs:
       # 16) coverage.xml を GitHub Actions のアーティファクトとして保存（cd_only はスキップ）
       - name: Upload coverage report
         if: github.event.inputs.mode != 'cd_only'
+        continue-on-error: true
+        id: upload
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
+
+      # 16-1) アップロード結果の表示
+      - name: Upload coverage report result
+        if: github.event.inputs.mode != 'cd_only'
+        run: |
+          if [ "${{ steps.upload.outcome }}" == "success" ]; then
+            echo "✅ coverage.xml のアップロードが完了しました。"
+          else
+            echo "⚠️ coverage.xml のアップロードに失敗しました。CIは続行します。"
+          fi
 
       # 17) Integration Test（cd_only はスキップ）
       - name: Run integration tests without coverage
