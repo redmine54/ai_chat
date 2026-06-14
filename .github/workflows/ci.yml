@@ -5,6 +5,17 @@ on:
     branches: [feature/**]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '実行モード'
+        required: true
+        default: 'ci_only'
+        type: choice
+        options:
+          - ci_only
+          - ci_then_cd
+          - cd_only
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -25,19 +36,21 @@ jobs:
 
       # 2) 古いDockerコンテナのクリーンアップ
       - name: Cleanup old Docker containers
+        if: github.event.inputs.mode != 'cd_only'
         run: docker container prune -f || true
 
       # 3) 不要なボリュームを削除してディスク節約
       - name: Cleanup old Docker volumes
+        if: github.event.inputs.mode != 'cd_only'
         run: docker volume prune -f || true
 
       # 4) 中間イメージも含めて完全クリーンアップ
       - name: Cleanup ALL Docker images (including intermediate)
+        if: github.event.inputs.mode != 'cd_only'
         run: docker system prune -af || true
 
       # 5) Docker Compose で backend をビルド
       - name: Build backend image
-        #  run: docker compose build backend
         run: docker compose build --no-cache backend
 
       # 5-1) ビルドされたイメージ名を確認
@@ -50,66 +63,75 @@ jobs:
           docker context ls
           echo "DOCKER_HOST=$DOCKER_HOST"
 
-      # 6) 依存関係インストール
+      # 6) 依存関係インストール（cd_only はスキップ）
       - name: Install dependencies
+        if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend pip install -r requirements.txt
 
-      # 7) ruff のバージョン確認（デバッグ用）
+      # 7) ruff のバージョン確認（cd_only はスキップ）
       - name: Check ruff version
+        if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend ruff --version
 
-      # 8) フォーマットチェック（ruff format --check）
+      # 8) フォーマットチェック（cd_only はスキップ）
       - name: Run Format Check (ruff fmt)
+        if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend ruff format --check .
 
-      # 9) Lint チェック（ruff check）
+      # 9) Lint チェック（cd_only はスキップ）
       - name: Run Lint (ruff)
+        if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend ruff check .
 
-      # 10) 型チェック（mypy）
+      # 10) 型チェック（cd_only はスキップ）
       - name: Run Type Check (mypy)
+        if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend mypy .
 
-      # 11) Unit Test（カバレッジ付き）
-      # coverage.xml を生成して GitHub Actions にアップロード
+      # 11) Unit Test（cd_only はスキップ）
       - name: Run unit tests with coverage
+        if: github.event.inputs.mode != 'cd_only'
         run: |
           docker compose run --rm backend pytest tests/unit/ -v \
             --cov=app --cov-report=xml --cov-report=term || \
             echo "⚠️ Unit test がありません"
 
-      # 12) coverage.xml をコンテナからホストにコピー
+      # 12) coverage.xml をコンテナからホストにコピー（cd_only はスキップ）
       - name: Copy coverage report from container
+        if: github.event.inputs.mode != 'cd_only'
         run: |
           docker compose run --rm backend cat /app/coverage.xml > coverage.xml || true
 
-      # 13) coverage.xml を GitHub Actions のアーティファクトとして保存
+      # 13) coverage.xml を GitHub Actions のアーティファクトとして保存（cd_only はスキップ）
       - name: Upload coverage report
+        if: github.event.inputs.mode != 'cd_only'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
 
-      # 14) Integration Test
+      # 14) Integration Test（cd_only はスキップ）
       - name: Run integration tests without coverage
+        if: github.event.inputs.mode != 'cd_only'
         run: |
           docker compose run --rm backend pytest tests/integration/ -v || \
           echo "⚠️ Integration test がありません"
 
       # 15) Docker イメージ脆弱性チェック（Trivy）- Mac環境のDocker socket問題により一時スキップ
       - name: Security Scan (Trivy:Docker イメージ脆弱性チェック)
+        if: github.event.inputs.mode != 'cd_only'
         run: |
           trivy image --exit-code 1 --severity HIGH,CRITICAL ai_chat-backend:latest || \
           echo "⚠️ Trivy scan skipped due to Docker socket issue on Mac runner"
 
       # 16) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
-        if: env.DEPLOY_ENV == 'compose'
+        if: env.DEPLOY_ENV == 'compose' && github.event.inputs.mode != 'cd_only'
         run: echo "compose モードのため K8s 検証をスキップ"
 
       # 17) minikube 環境の場合のみ K8s マニフェストを検証
       - name: Validate K8s manifests (minikube)
-        if: env.DEPLOY_ENV == 'minikube'
+        if: env.DEPLOY_ENV == 'minikube' && github.event.inputs.mode != 'cd_only'
         run: |
           minikube start || true
           find k8s/ -name "*.yaml" ! -name "kustomization.yaml" | \
@@ -117,7 +139,15 @@ jobs:
 
       # 18) AKS 環境の場合のみ K8s マニフェストを検証
       - name: Validate K8s manifests (aks)
-        if: env.DEPLOY_ENV == 'aks'
+        if: env.DEPLOY_ENV == 'aks' && github.event.inputs.mode != 'cd_only'
         run: |
           find k8s/ -name "*.yaml" ! -name "kustomization.yaml" | \
             xargs kubectl apply --dry-run=client --validate=false -f
+
+      # 19) デプロイ（ci_then_cd または cd_only の場合のみ実行）
+      - name: Deploy
+        if: github.event.inputs.mode == 'ci_then_cd' || github.event.inputs.mode == 'cd_only'
+        run: |
+          docker compose up -d
+          echo "✅ デプロイ完了"
+          docker compose ps
