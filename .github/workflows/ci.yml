@@ -43,10 +43,13 @@ jobs:
           echo "コミット   : ${{ github.sha }}"
           echo "==============================="
 
-      # 1) パーミッション修正（data等のディレクトリが残る場合の対策）
+      # 1) パーミッション修正
       - name: Fix permissions
         run: |
-          sudo chmod -R 777 $GITHUB_WORKSPACE || true
+          sudo chmod -R 777 ~/git_lesson/ai_chat/actions-runner/_work/ai_chat/ai_chat || true
+          sudo rm -rf ~/git_lesson/ai_chat/actions-runner/_work/ai_chat/ai_chat/src/backend/data || true
+          sudo rm -rf ~/git_lesson/ai_chat/actions-runner/_work/ai_chat/ai_chat/src/backend/docs || true
+          sudo rm -rf ~/git_lesson/ai_chat/actions-runner/_work/ai_chat/ai_chat/src/backend/tests || true
 
       # 2) コード取得
       - name: Checkout code
