@@ -47,11 +47,13 @@ jobs:
       # 4) 中間イメージも含めて完全クリーンアップ
       - name: Cleanup ALL Docker images (including intermediate)
         if: github.event.inputs.mode != 'cd_only'
-        run: docker system prune -af || true
+        #run: docker system prune -af || true # 毎回全削除→毎回フルダウンロード
+        run: docker image prune -f || true  # 使っていないイメージのみ削除
 
       # 5) Docker Compose で backend をビルド
       - name: Build backend image
-        run: docker compose build --no-cache backend
+        run: docker compose build backend
+        #run: docker compose build --no-cache backend
 
       # 5-1) ビルドされたイメージ名を確認
       - name: List Docker images
