@@ -39,9 +39,14 @@ COPY docs/ /app/docs/
 # 10. README.md をコピー
 COPY README.md /app/README.md
 
-# 11. ポート開放
+# 11. ポート開放の前に追加
+# 実行ユーザーをrootから変更（ホスト側のファイル権限問題を回避）
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# 12. ポート開放
 EXPOSE 8000
 
-# 12. サーバー起動
+# 13. サーバー起動
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 #CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
