@@ -19,7 +19,11 @@
         --user-text: #ffffff;
       }
 
-      * { box-sizing: border-box; margin: 0; padding: 0; }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -95,12 +99,23 @@
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(4px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
-      .message.ai { align-self: flex-start; }
-      .message.user { align-self: flex-end; flex-direction: row-reverse; }
+      .message.ai {
+        align-self: flex-start;
+      }
+      .message.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
 
       .avatar {
         width: 32px;
@@ -158,12 +173,22 @@
         animation: bounce 1.2s infinite;
       }
 
-      .typing span:nth-child(2) { animation-delay: 0.2s; }
-      .typing span:nth-child(3) { animation-delay: 0.4s; }
+      .typing span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
 
       @keyframes bounce {
-        0%, 60%, 100% { transform: translateY(0); }
-        30% { transform: translateY(-6px); }
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-6px);
+        }
       }
 
       /* 入力エリア */
@@ -246,8 +271,13 @@
         justify-content: center;
       }
 
-      .send-btn:hover { background-color: var(--accent-hover); }
-      .send-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+      .send-btn:hover {
+        background-color: var(--accent-hover);
+      }
+      .send-btn:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
 
       /* ウェルカムメッセージ */
       .welcome {
@@ -274,30 +304,52 @@
         font-size: 13px;
         color: #999;
       }
+
+      /* Markdownテーブルのスタイル */
+      .bubble table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 8px 0;
+      }
+
+      .bubble table th,
+      .bubble table td {
+        border: 1px solid var(--border-color);
+        padding: 6px 12px;
+        text-align: left;
+      }
+
+      .bubble table th {
+        background-color: var(--accent-color);
+        color: var(--white);
+        font-weight: bold;
+      }
+
+      .bubble table tr:nth-child(even) {
+        background-color: var(--sidebar-bg);
+      }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
   </head>
   <body>
-        <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;">
-      <span style="color:#aaa;font-size:13px;margin-right:8px;">🔗 メニュー:</span>
-      <a href="/api/chat/ui" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">💬 チャット</a>
-      <a href="/api/indexer" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📄 PDFインデクサー</a>
-      <a href="/api/specs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📚 ドキュメント</a>
-      <a href="/swagger/docs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🔧 API</a>
-      <a href="/api/utilities" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🛠️ shユーティリティ</a>
-    <a href="/api/ci" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">⚙️ CI結果</a>
-    </nav>    <!-- ヘッダー -->
+    <nav style="background: #2c2c2c; padding: 10px 20px; display: flex; gap: 12px; align-items: center">
+      <span style="color: #aaa; font-size: 13px; margin-right: 8px">🔗 メニュー:</span>
+      <a href="/api/chat/ui" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">💬 チャット</a>
+      <a href="/api/indexer" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">📄 PDFインデクサー</a>
+      <a href="/api/specs" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">📚 ドキュメント</a>
+      <a href="/swagger/docs" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">🔧 API</a>
+      <a href="/api/utilities" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">🛠️ shユーティリティ</a>
+      <a href="/api/ci" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">⚙️ CI結果</a>
+    </nav>
+    <!-- ヘッダー -->
     <div class="header">
       <div class="header-title">
         <i class="fa-solid fa-robot"></i>
         ai_chat
       </div>
       <div class="header-links">
-        <a href="/api/indexer" class="header-link">
-          <i class="fa-solid fa-database"></i> PDFインデクサー
-        </a>
-        <a href="/api/specs" class="header-link">
-          <i class="fa-solid fa-book"></i> ドキュメント
-        </a>
+        <a href="/api/indexer" class="header-link"> <i class="fa-solid fa-database"></i> PDFインデクサー </a>
+        <a href="/api/specs" class="header-link"> <i class="fa-solid fa-book"></i> ドキュメント </a>
       </div>
     </div>
 
@@ -324,11 +376,7 @@
     <!-- 入力エリア -->
     <div class="input-area">
       <div class="input-wrapper">
-        <textarea
-          id="messageInput"
-          placeholder="質問を入力してください... （Enterで改行、送信ボタンで送信）"
-          rows="1"
-        ></textarea>
+        <textarea id="messageInput" placeholder="質問を入力してください... （Enterで改行、送信ボタンで送信）" rows="1"></textarea>
       </div>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">
         <i class="fa-solid fa-paper-plane"></i>
@@ -336,15 +384,15 @@
     </div>
 
     <script>
-      const chatHistory = document.getElementById('chatHistory');
-      const messageInput = document.getElementById('messageInput');
-      const sendBtn = document.getElementById('sendBtn');
-      const welcomeMsg = document.getElementById('welcomeMsg');
+      const chatHistory = document.getElementById("chatHistory");
+      const messageInput = document.getElementById("messageInput");
+      const sendBtn = document.getElementById("sendBtn");
+      const welcomeMsg = document.getElementById("welcomeMsg");
 
       // テキストエリアの高さを自動調整
-      messageInput.addEventListener('input', () => {
-        messageInput.style.height = 'auto';
-        messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+      messageInput.addEventListener("input", () => {
+        messageInput.style.height = "auto";
+        messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + "px";
       });
 
       // 送信ボタンのみ送信（Enter・Shift+Enterは改行）
@@ -352,20 +400,22 @@
 
       function addMessage(text, role) {
         // ウェルカムメッセージを非表示
-        if (welcomeMsg) welcomeMsg.style.display = 'none';
+        if (welcomeMsg) welcomeMsg.style.display = "none";
 
-        const div = document.createElement('div');
+        const div = document.createElement("div");
         div.className = `message ${role}`;
 
-        const avatar = document.createElement('div');
-        avatar.className = 'avatar';
-        avatar.innerHTML = role === 'ai'
-          ? '<i class="fa-solid fa-robot"></i>'
-          : '<i class="fa-solid fa-user"></i>';
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.innerHTML = role === "ai" ? '<i class="fa-solid fa-robot"></i>' : '<i class="fa-solid fa-user"></i>';
 
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        bubble.textContent = text;
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        if (role === "ai") {
+          bubble.innerHTML = marked.parse(text);
+        } else {
+          bubble.textContent = text;
+        }
 
         div.appendChild(avatar);
         div.appendChild(bubble);
@@ -375,18 +425,18 @@
       }
 
       function addTyping() {
-        if (welcomeMsg) welcomeMsg.style.display = 'none';
-        const div = document.createElement('div');
-        div.className = 'message ai';
-        div.id = 'typing-indicator';
+        if (welcomeMsg) welcomeMsg.style.display = "none";
+        const div = document.createElement("div");
+        div.className = "message ai";
+        div.id = "typing-indicator";
 
-        const avatar = document.createElement('div');
-        avatar.className = 'avatar';
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
         avatar.innerHTML = '<i class="fa-solid fa-robot"></i>';
 
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble typing';
-        bubble.innerHTML = '<span></span><span></span><span></span>';
+        const bubble = document.createElement("div");
+        bubble.className = "bubble typing";
+        bubble.innerHTML = "<span></span><span></span><span></span>";
 
         div.appendChild(avatar);
         div.appendChild(bubble);
@@ -395,7 +445,7 @@
       }
 
       function removeTyping() {
-        const indicator = document.getElementById('typing-indicator');
+        const indicator = document.getElementById("typing-indicator");
         if (indicator) indicator.remove();
       }
 
@@ -405,33 +455,33 @@
 
         // 送信ボタン無効化
         sendBtn.disabled = true;
-        messageInput.value = '';
-        messageInput.style.height = 'auto';
+        messageInput.value = "";
+        messageInput.style.height = "auto";
 
         // ユーザーメッセージ表示
-        addMessage(text, 'user');
+        addMessage(text, "user");
 
         // ローディング表示
         addTyping();
 
         try {
-          const res = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, model: document.getElementById('modelSelect').value })
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text, model: document.getElementById("modelSelect").value }),
           });
 
           const data = await res.json();
           removeTyping();
 
           if (res.ok) {
-            addMessage(data.answer, 'ai');
+            addMessage(data.answer, "ai");
           } else {
-            addMessage(`エラー: ${data.detail}`, 'ai');
+            addMessage(`エラー: ${data.detail}`, "ai");
           }
         } catch (e) {
           removeTyping();
-          addMessage(`通信エラーが発生しました: ${e.message}`, 'ai');
+          addMessage(`通信エラーが発生しました: ${e.message}`, "ai");
         } finally {
           sendBtn.disabled = false;
           messageInput.focus();
