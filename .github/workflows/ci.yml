@@ -30,6 +30,11 @@ jobs:
         working-directory: .
 
     steps:
+      # 0) パーミッション修正（data等のディレクトリが残る場合の対策）
+      - name: Fix permissions
+        run: |
+          sudo chmod -R 777 $GITHUB_WORKSPACE || true
+
       # 1) コード取得
       - name: Checkout code
         uses: actions/checkout@v4
