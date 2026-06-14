@@ -27,74 +27,86 @@ jobs:
     runs-on: self-hosted
     defaults:
       run:
-        working-directory: .
+        working-directory: ${{ github.workspace }}
 
     steps:
-      # 0) パーミッション修正（data等のディレクトリが残る場合の対策）
+      # 0) 実行情報の表示
+      - name: Show execution info
+        run: |
+          echo "==============================="
+          echo "🚀 CI実行情報"
+          echo "==============================="
+          echo "実行モード : ${{ github.event.inputs.mode || 'push (自動)' }}"
+          echo "ブランチ   : ${{ github.ref_name }}"
+          echo "実行者     : ${{ github.actor }}"
+          echo "開始時刻   : $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "コミット   : ${{ github.sha }}"
+          echo "==============================="
+
+      # 1) パーミッション修正（data等のディレクトリが残る場合の対策）
       - name: Fix permissions
         run: |
           sudo chmod -R 777 $GITHUB_WORKSPACE || true
 
-      # 1) コード取得
+      # 2) コード取得
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2) 古いDockerコンテナのクリーンアップ
+      # 3) 古いDockerコンテナのクリーンアップ
       - name: Cleanup old Docker containers
         if: github.event.inputs.mode != 'cd_only'
         run: docker container prune -f || true
 
-      # 3) 不要なボリュームを削除してディスク節約
+      # 4) 不要なボリュームを削除してディスク節約
       - name: Cleanup old Docker volumes
         if: github.event.inputs.mode != 'cd_only'
         run: docker volume prune -f || true
 
-      # 4) 中間イメージも含めて完全クリーンアップ
+      # 5) 中間イメージも含めて完全クリーンアップ
       - name: Cleanup ALL Docker images (including intermediate)
         if: github.event.inputs.mode != 'cd_only'
-        run: docker system prune -af || true # 毎回全削除→毎回フルダウンロード
+        run: docker system prune -af || true
 
-      # 5) Docker Compose で backend をビルド
+      # 6) Docker Compose で backend をビルド
       - name: Build backend image
         run: docker compose build backend
-        #run: docker compose build --no-cache backend
 
-      # 5-1) ビルドされたイメージ名を確認
+      # 7) ビルドされたイメージ名を確認
       - name: List Docker images
         run: docker images | grep -i backend
 
-      # 5-2) Dockerコンテキストを確認
+      # 8) Dockerコンテキストを確認
       - name: Check Docker context
         run: |
           docker context ls
           echo "DOCKER_HOST=$DOCKER_HOST"
 
-      # 6) 依存関係インストール（cd_only はスキップ）
+      # 9) 依存関係インストール（cd_only はスキップ）
       - name: Install dependencies
         if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend pip install -r requirements.txt
 
-      # 7) ruff のバージョン確認（cd_only はスキップ）
+      # 10) ruff のバージョン確認（cd_only はスキップ）
       - name: Check ruff version
         if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend ruff --version
 
-      # 8) フォーマットチェック（cd_only はスキップ）
+      # 11) フォーマットチェック（cd_only はスキップ）
       - name: Run Format Check (ruff fmt)
         if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend ruff format --check .
 
-      # 9) Lint チェック（cd_only はスキップ）
+      # 12) Lint チェック（cd_only はスキップ）
       - name: Run Lint (ruff)
         if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend ruff check .
 
-      # 10) 型チェック（cd_only はスキップ）
+      # 13) 型チェック（cd_only はスキップ）
       - name: Run Type Check (mypy)
         if: github.event.inputs.mode != 'cd_only'
         run: docker compose run --rm backend mypy .
 
-      # 11) Unit Test（cd_only はスキップ）
+      # 14) Unit Test（cd_only はスキップ）
       - name: Run unit tests with coverage
         if: github.event.inputs.mode != 'cd_only'
         run: |
@@ -102,13 +114,13 @@ jobs:
             --cov=app --cov-report=xml --cov-report=term || \
             echo "⚠️ Unit test がありません"
 
-      # 12) coverage.xml をコンテナからホストにコピー（cd_only はスキップ）
+      # 15) coverage.xml をコンテナからホストにコピー（cd_only はスキップ）
       - name: Copy coverage report from container
         if: github.event.inputs.mode != 'cd_only'
         run: |
           docker compose run --rm backend cat /app/coverage.xml > coverage.xml || true
 
-      # 13) coverage.xml を GitHub Actions のアーティファクトとして保存（cd_only はスキップ）
+      # 16) coverage.xml を GitHub Actions のアーティファクトとして保存（cd_only はスキップ）
       - name: Upload coverage report
         if: github.event.inputs.mode != 'cd_only'
         uses: actions/upload-artifact@v4
@@ -116,14 +128,14 @@ jobs:
           name: coverage-report
           path: coverage.xml
 
-      # 14) Integration Test（cd_only はスキップ）
+      # 17) Integration Test（cd_only はスキップ）
       - name: Run integration tests without coverage
         if: github.event.inputs.mode != 'cd_only'
         run: |
           docker compose run --rm backend pytest tests/integration/ -v || \
           echo "⚠️ Integration test がありません"
 
-      # 15) Docker イメージ脆弱性チェック（Trivy）
+      # 18) Docker イメージ脆弱性チェック（Trivy）
       - name: Security Scan (Trivy:Docker イメージ脆弱性チェック)
         run: |
           docker run --rm \
@@ -138,12 +150,12 @@ jobs:
           echo "✅ Dockerの脆弱性検査は正常に終了しました。脆弱性は検出されませんでした。" || \
           echo "✅ Dockerの脆弱性検査は正常に終了しました。但し、脆弱性が検出されています。詳細は上記のレポートを参照してください。対応: .trivyignoreに未対応のCVEを追加するか、該当パッケージのアップグレードを検討してください。"
 
-      # 16) K8s 検証（compose の場合はスキップ）
+      # 19) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
         if: env.DEPLOY_ENV == 'compose' && github.event.inputs.mode != 'cd_only'
         run: echo "compose モードのため K8s 検証をスキップ"
 
-      # 17) minikube 環境の場合のみ K8s マニフェストを検証
+      # 20) minikube 環境の場合のみ K8s マニフェストを検証
       - name: Validate K8s manifests (minikube)
         if: env.DEPLOY_ENV == 'minikube' && github.event.inputs.mode != 'cd_only'
         run: |
@@ -151,14 +163,14 @@ jobs:
           find k8s/ -name "*.yaml" ! -name "kustomization.yaml" | \
             xargs kubectl apply --dry-run=client --validate=false -f
 
-      # 18) AKS 環境の場合のみ K8s マニフェストを検証
+      # 21) AKS 環境の場合のみ K8s マニフェストを検証
       - name: Validate K8s manifests (aks)
         if: env.DEPLOY_ENV == 'aks' && github.event.inputs.mode != 'cd_only'
         run: |
           find k8s/ -name "*.yaml" ! -name "kustomization.yaml" | \
             xargs kubectl apply --dry-run=client --validate=false -f
 
-      # 19) デプロイ（ci_then_cd または cd_only の場合のみ実行）
+      # 22) デプロイ（ci_then_cd または cd_only の場合のみ実行）
       - name: Deploy
         if: github.event.inputs.mode == 'ci_then_cd' || github.event.inputs.mode == 'cd_only'
         run: |
