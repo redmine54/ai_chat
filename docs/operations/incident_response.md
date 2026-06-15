@@ -1,5 +1,5 @@
 # Incident Response
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-14</div>
 
 ## インシデント対応手順
 
@@ -32,34 +32,43 @@ flowchart TD
 #### P1: チャットが完全に使えない
 
 ```bash
-# 1. Pod状態確認
-kubectl get pods -n aichat
+# 1. コンテナ状態確認
+docker compose ps
 
 # 2. ログ確認
-kubectl logs -f deploy/backend -n aichat -c fastapi-app
+docker compose logs -f backend
 
 # 3. 再起動
+docker compose restart backend
+
+# K8s環境の場合
+kubectl get pods -n aichat
+kubectl logs -f deploy/backend -n aichat -c fastapi-app
 kubectl rollout restart deployment/backend -n aichat
-kubectl rollout restart deployment/vectordb -n aichat
 ```
 
 #### P2: ChromaDB接続エラー（E001）
 
 ```bash
-# 1. ChromaDB Pod確認
-kubectl get pods -n aichat | grep vectordb
+# 1. ChromaDB状態確認
+docker compose ps
 
-# 2. ヘルスチェック（API v2）
-kubectl exec -it <backend-pod> -n aichat -c fastapi-app -- \
-  python -c "import urllib.request; print(urllib.request.urlopen('http://vectordb-service:8000/api/v2/heartbeat').status)"
+# 2. ヘルスチェック
+curl http://localhost:8001/api/v2/heartbeat
 
 # 3. ChromaDB再起動
+docker compose restart vectordb
+
+# K8s環境の場合
 kubectl rollout restart deployment/vectordb -n aichat
 ```
 
 #### P2: docker composeでDocker接続エラー
 
 ```bash
+# Docker PATHが通っていない場合
+export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+
 # Minikubeモードのままになっている場合
 eval $(minikube docker-env -u)
 docker compose up -d
@@ -68,22 +77,47 @@ docker compose up -d
 #### P3: レスポンスが遅い
 
 ```bash
-# リソース使用状況確認
+# リソース使用状況確認（K8s環境）
 kubectl top pods -n aichat
 
 # Pod数を増やす
 kubectl scale deployment/backend --replicas=2 -n aichat
 ```
 
-#### P3: CIが実行されない（🟡待機中のまま）
+#### P3: CIが実行されない（待機中のまま）
 
 ```bash
 # Runnerが起動しているか確認
-ps aux | grep run.sh
+ps aux | grep Runner.Listener | grep -v grep
 
-# Runnerを起動
-cd actions-runner
-./run.sh
+# Runnerを再起動
+kill -9 $(pgrep -f Runner.Listener)
+cd ~/git_lesson/ai_chat/actions-runner
+./run.sh &
+```
+
+#### P3: Trivyスキャンでエラー
+
+```bash
+# Docker socket確認
+ls -la /var/run/docker.sock
+
+# .trivyignoreに新たなCVEを追加する場合
+echo "CVE-XXXX-XXXXX" >> .trivyignore
+git add .trivyignore
+git commit -m "fix: add CVE-XXXX-XXXXX to .trivyignore"
+git push origin feature/xxx
+```
+
+#### P4: ngrok経由でアクセスできない
+
+```bash
+# ngrokの状態確認
+curl http://localhost:4040/api/tunnels | grep addr
+
+# ngrokを再起動（ポート80向け）
+kill $(pgrep -f ngrok)
+ngrok http 80
 ```
 
 ---
