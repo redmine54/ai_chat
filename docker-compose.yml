@@ -32,6 +32,7 @@ services:
       - ./src/backend/data:/app/data
       - ./src/backend/templates:/app/templates
       - ./tests:/app/tests  # ← 追加
+      - ./README.md:/app/README.md  # ← 追加
 
 
     #  - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加

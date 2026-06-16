@@ -20,6 +20,22 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
+class RequestLogMiddleware(BaseHTTPMiddleware):
+    """ FastAPI に「何が要求されたか」をすべてログ出力するミドルウェア """
+    async def dispatch(self, request: StarletteRequest, call_next):
+        print(f"[REQUEST] {request.method} {request.url.path}")
+        if request.query_params:
+            print(f"[QUERY] {dict(request.query_params)}")
+        if request.headers:
+            print(f"[HEADERS] {dict(request.headers)}")
+
+        response = await call_next(request)
+
+        print(f"[RESPONSE] {response.status_code} for {request.url.path}")
+        return response
+
+
+
 
 # キャッシュ無効化ミドルウェア
 class NoCacheMiddleware(BaseHTTPMiddleware):
@@ -32,6 +48,28 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 app = FastAPI(
     docs_url=None, redoc_url="/swagger/redoc", openapi_url="/swagger/openapi.json"
 )
+
+# FastAPI に「何が要求されたか」をすべてログ出力するミドルウェア登録
+app.add_middleware(RequestLogMiddleware)
+
+# デバッグ ls
+README_PATH = os.path.join(BASE_DIR, "README.md")
+@app.get("/api/root_meta/debug_ls")
+def debug_ls():
+    return {
+        "BASE_DIR": BASE_DIR,
+        "files_in_BASE_DIR": os.listdir(BASE_DIR),
+        "README_exists": os.path.exists(README_PATH),
+        "README_path": README_PATH,
+    }
+
+from fastapi import Response
+
+#@app.get("/api/root_meta/README.md")
+#def get_root_readme():
+#    with open(README_PATH, "r", encoding="utf-8") as f:
+#        content = f.read()
+#    return Response(content, media_type="text/plain")
 
 
 @app.get("/swagger/docs", include_in_schema=False)
@@ -237,8 +275,22 @@ app.mount(
 )
 
 # ルート直下のREADME.md用
-if os.path.exists(os.path.join(BASE_DIR, "README.md")):
-    app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
+#if os.path.exists(os.path.join(BASE_DIR, "README.md")):
+#    app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
+app.mount(
+    "/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta"
+)
+
+#app.mount(
+#    "/api/root_meta",
+#    StaticFiles(directory=BASE_DIR),
+#    name="root_meta"
+#)
+
+
+
+
+
 
 
 # チャット画面（メイン）

@@ -37,7 +37,7 @@ COPY tests/ /app/tests/
 COPY docs/ /app/docs/
 
 # 10. README.md をコピー
-COPY README.md /app/README.md
+# COPY README.md /app/README.md
 
 # 11. ポート開放の前に追加
 # 実行ユーザーをrootから変更（ホスト側のファイル権限問題を回避）
