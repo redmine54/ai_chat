@@ -23,7 +23,8 @@ ENV GOOGLE_API_VERSION=v1
 
 # 6. ライブラリをインストール
 #RUN pip install --no-cache-dir -r requirements.txt
-COPY requirements.txt /app/requirements.txt
+#COPY requirements.txt /app/requirements.txt
+COPY src/backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # 7. バックエンドのソースコードをコピー
