@@ -55,7 +55,6 @@ app.add_middleware(RequestLogMiddleware)
 # デバッグ ls
 README_PATH = os.path.join(BASE_DIR, "README.md")
 
-
 @app.get("/api/root_meta/debug_ls")
 def debug_ls():
     return {
@@ -65,14 +64,11 @@ def debug_ls():
         "README_path": README_PATH,
     }
 
-
-
 # @app.get("/api/root_meta/README.md")
 # def get_root_readme():
 #    with open(README_PATH, "r", encoding="utf-8") as f:
 #        content = f.read()
 #    return Response(content, media_type="text/plain")
-
 
 @app.get("/swagger/docs", include_in_schema=False)
 async def custom_swagger_ui():
@@ -106,14 +102,11 @@ async def custom_swagger_ui():
 </body>
 </html>""")
 
-
 app.add_middleware(NoCacheMiddleware)
-
 
 class ChatRequest(BaseModel):
     message: str
     model: str = "models/gemini-2.5-flash"
-
 
 class IndexRequest(BaseModel):
     filename: str  # data/配下のファイル名
