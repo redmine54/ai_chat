@@ -1,12 +1,12 @@
 # Glossary
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新: 2026-06-14</div>
 
 ## 用語集
 
 | 用語 | 説明 |
 |------|------|
 | RAG | Retrieval-Augmented Generation。外部ドキュメントを検索して回答を生成するAI手法 |
-| LLM | Large Language Model。大規模言語モデル（例：GPT-4、Claude） |
+| LLM | Large Language Model。大規模言語モデル（例：GPT-4、Claude、Gemini） |
 | ベクトル検索 | テキストを数値ベクトルに変換して意味的な類似度で検索する手法 |
 | Embedding | テキストをベクトルに変換する処理 |
 | Chunk | PDFドキュメントを分割した単位（本システムでは500文字） |
@@ -31,5 +31,19 @@
 | Sidecar | Istioが自動注入するプロキシコンテナ（Envoy） |
 | detached HEAD | Gitでブランチではなく直接タグ・コミットを指している状態 |
 | docker compose | 複数コンテナをローカルで管理するツール（開発環境用） |
-| ngrok | ローカルサーバーを一時的に外部公開するツール（デモ用） |
+| ngrok | ローカルサーバーを一時的に外部公開するツール（compose環境でのユーザーレビュー用） |
 | DEPLOY_ENV | CI/CDで使用する環境変数。compose/minikube/aksを指定 |
+| Trivy | コンテナイメージの脆弱性スキャンツール。CIで自動実行 |
+| .trivyignore | Trivyスキャンで無視するCVEを記載するファイル |
+| CVE | Common Vulnerabilities and Exposures。共通脆弱性識別子 |
+| workflow_dispatch | GitHub Actionsの手動実行トリガー。ci_only/ci_then_cd/cd_onlyを選択可能 |
+| ci_only | CIのみ実行するモード（テスト・検証のみ） |
+| ci_then_cd | CI完了後に自動デプロイするモード |
+| cd_only | デプロイのみ実行するモード（テストをスキップ） |
+| marked.js | JavaScriptのMarkdownレンダリングライブラリ。チャット回答の表示に使用 |
+| coverage | テストがコードを実行した割合。現状55%（目標80%） |
+| .trivyignore | Trivyスキャンで除外するCVEを記録するファイル |
+| ruff | Python用の高速フォーマッター・Lintツール |
+| mypy | Python用の静的型チェックツール |
+| pytest | Pythonのテストフレームワーク |
+| pytest-cov | pytestのカバレッジ計測プラグイン |

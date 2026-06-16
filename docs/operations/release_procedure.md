@@ -1,5 +1,5 @@
 # Release Procedure
-<div align="right">作成日: 2026-06-05</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-14</div>
 
 ## リリース手順
 
@@ -7,17 +7,17 @@
 
 ```mermaid
 flowchart TD
-    A[featureブランチで開発] --> B[Pull Request作成\nfeature → main]
-    B --> C[CI自動実行\nGitHub Actions Self-hosted Runner]
-    C --> C1[Dockerイメージビルド]
-    C --> C2[Unitテスト]
-    C --> C3[Integrationテスト]
-    C --> C4[K8sマニフェスト検証\nDEPLOY_ENVに応じて]
+    A[featureブランチで開発] --> B[Push → CI自動実行\nGitHub Actions Self-hosted Runner]
+    B --> C1[フォーマット・Lint・型チェック]
+    B --> C2[Unitテスト・Integrationテスト]
+    B --> C3[Dockerイメージ脆弱性チェック\nTrivy]
+    B --> C4[K8sマニフェスト検証\nDEPLOY_ENVに応じて]
     C1 & C2 & C3 & C4 --> D{CI成功}
-    D --> E[コードレビュー・承認]
-    E --> F[mainブランチへマージ]
-    F --> G[ArgoCD自動デプロイ]
-    G --> H[タグ作成・GitHubリリース]
+    D --> E[Pull Request作成\nfeature → main]
+    E --> F[コードレビュー・承認]
+    F --> G[mainブランチへマージ]
+    G --> H[手動デプロイ\nworkflow_dispatch: cd_only]
+    H --> I[タグ作成・GitHubリリース]
 ```
 
 ---
@@ -34,12 +34,15 @@ flowchart TD
 
 ### リリース前チェックリスト
 
-- [ ] CIが全て成功しているか
+- [ ] CIが全て成功しているか（Unit/Integration/Trivy/K8s検証）
 - [ ] コードレビューが完了しているか
-- [ ] テストが全て成功しているか
-- [ ] ドキュメントが更新されているか
+- [ ] テストが全て成功しているか（30件Unit・12件Integration）
+- [ ] カバレッジが確認されているか（現状55%）
+- [ ] ドキュメントが更新されているか（docs/testing/配下を含む）
 - [ ] `.gitignore`に不要なファイルが含まれていないか
+- [ ] `.trivyignore`に新たなCVEを追加・確認したか
 - [ ] `actions-runner/`がGit管理対象外であるか
+- [ ] `src/backend/data/`がGit管理対象外であるか（.gitignore確認）
 
 ---
 
@@ -47,18 +50,45 @@ flowchart TD
 
 ```bash
 # mainブランチに切り替え
-git switch main
+git checkout main
 git pull origin main
+
+# 既存タグの確認
+git tag
 
 # タグ作成
 git tag v0.2.0
 git push origin v0.2.0
 ```
 
-GitHubでリリース作成：
+**タグ変更が必要な場合:**
+
+```bash
+# 既存タグと同じコミットに新しいタグを作成
+git tag v0.1.10 $(git rev-list -n 1 v0.10.0)
+git push origin v0.1.10
+
+# 古いタグを削除
+git push origin :refs/tags/v0.10.0
+git tag -d v0.10.0
 ```
-https://github.com/redmine54/ai_chat/releases/new
-→ タグを選択 → タイトル・説明を入力 → Publish release
+
+---
+
+### デプロイ手順（cd_only）
+
+```bash
+# GitHub → Actions → CI → Run workflow
+# Branch: main（またはfeatureブランチ）
+# 実行モード: cd_only
+# Run workflow をクリック
+```
+
+デプロイ完了後に確認：
+
+```bash
+docker compose ps
+curl http://localhost:8000/health
 ```
 
 ---
@@ -71,7 +101,7 @@ argocd app rollback aichat
 
 # または手動でイメージタグを変更
 kubectl set image deployment/backend \
-  fastapi-app=aichat:前バージョンのタグ -n aichat
+  fastapi-app=ai_chat-backend:前バージョンのタグ -n aichat
 
 # タグから修正ブランチを作成
 git checkout -b hotfix/v0.1.1 v0.1.0
@@ -83,4 +113,4 @@ git checkout -b hotfix/v0.1.1 v0.1.0
 
 | バージョン | 日付 | 内容 |
 |-----------|------|------|
-| v0.1.0 | 2026-06-05 | 初期リリース（RAG基盤・CI/CD・mTLS・ドキュメントビューア） |
+| v0.1.0 | 2026-06-14 | 初期リリース（RAG基盤・CI/CD・mTLS・ドキュメントビューア・PDFインデクサー・Markdownレンダリング・Trivy脆弱性チェック） |

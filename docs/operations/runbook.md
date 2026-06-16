@@ -1,5 +1,5 @@
 # Runbook
-<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-08</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-14</div>
 
 ## 運用手順書
 
@@ -8,56 +8,95 @@
 #### システム起動（docker composeモード）
 
 ```bash
-./switch_to_compose.sh
+docker compose up -d
 ```
 
 | サービス | URL |
 |---------|-----|
-| フロントエンド | http://localhost:80 |
-| バックエンド API（HTTP） | http://localhost:8000/swagger/docs |
-| ドキュメントビューア（HTTP） | http://localhost:8000/api/specs |
-| PDFインデクサー（HTTP） | http://localhost:8000/api/indexer |
-| バックエンド API（HTTPS） | https://localhost/swagger/docs |
-| ドキュメントビューア（HTTPS） | https://localhost/api/specs |
-| PDFインデクサー（HTTPS） | https://localhost/api/indexer |
+| チャット画面 | http://localhost |
+| バックエンド API | http://localhost:8000/swagger/docs |
+| ドキュメントビューア | http://localhost/api/specs |
+| PDFインデクサー | http://localhost/api/indexer |
 | ChromaDB | http://localhost:8001 |
 
-#### システム起動（Minikubeモード・HTTP）
+#### ヘルスチェック
 
 ```bash
-./switch_to_minikube.sh
-./switch_to_http.sh
-# ドキュメントビューア: http://localhost:8090/api/specs
-# バックエンド API:     http://localhost:8090/swagger/docs
-# PDFインデクサー:      http://localhost:8090/api/indexer
+curl http://localhost:8000/health
+# → {"status": "ok"}
 ```
-
-#### システム起動（Minikubeモード・HTTPS）
-
-```bash
-./switch_to_minikube.sh
-./switch_to_https.sh
-# ドキュメントビューア: https://localhost/api/specs
-# バックエンド API:     https://localhost/swagger/docs
-# PDFインデクサー:      https://localhost/api/indexer
-```
-
-#### システム起動（AKS環境）
-
-| サービス | URL |
-|---------|-----|
-| ドキュメントビューア（HTTP） | http://localhost:8090/api/specs |
-| バックエンド API（HTTP） | http://localhost:8090/swagger/docs |
-| PDFインデクサー（HTTP） | http://localhost:8090/api/indexer |
-| ドキュメントビューア（HTTPS） | https://localhost/api/specs |
-| バックエンド API（HTTPS） | https://localhost/swagger/docs |
-| PDFインデクサー（HTTPS） | https://localhost/api/indexer |
 
 #### GitHub Actions Runner起動
 
 ```bash
-cd actions-runner
-./run.sh
+cd ~/git_lesson/ai_chat/actions-runner
+./run.sh &
+```
+
+**Runnerの状態確認:**
+
+```bash
+ps aux | grep Runner.Listener | grep -v grep
+```
+
+**Runnerの再起動:**
+
+```bash
+kill -9 $(pgrep -f Runner.Listener)
+cd ~/git_lesson/ai_chat/actions-runner
+./run.sh &
+```
+
+---
+
+### CI/CDの手動実行
+
+#### CIのみ実行（テスト）
+
+```bash
+git push origin feature/xxx  # → 自動でCIが起動
+```
+
+#### 手動でモードを選択して実行
+
+GitHub → Actions → CI → Run workflow →
+- Branch: 対象ブランチを選択
+- 実行モード: ci_only / ci_then_cd / cd_only を選択
+- Run workflow をクリック
+
+#### デプロイのみ実行（cd_only）
+
+```bash
+# GitHub ActionsのワークフローをGitHub UIから手動実行
+# Branch: feature/xxx または main
+# 実行モード: cd_only
+```
+
+---
+
+### PDFドキュメントの管理
+
+#### PDFファイルの追加手順
+
+1. `src/backend/data/` に対象PDFを配置
+2. compose環境: `docker compose restart backend`
+3. WebUI（http://localhost/api/indexer）からインデックス化を実行
+
+#### PDFのインデックス化（APIから）
+
+```bash
+# インデックス化
+curl -X POST http://localhost:8000/api/pdf/index \
+  -H "Content-Type: application/json" \
+  -d '{"filename": "対象ファイル名.pdf"}'
+
+# ステータス確認
+curl "http://localhost:8000/api/pdf/status?filename=対象ファイル名.pdf"
+
+# 削除
+curl -X DELETE http://localhost:8000/api/pdf/delete \
+  -H "Content-Type: application/json" \
+  -d '{"document_id": "対象ファイル名（拡張子なし）"}'
 ```
 
 ---
@@ -101,6 +140,9 @@ kubectl logs -f deploy/backend -n aichat -c fastapi-app
 
 # vectordbのログ
 kubectl logs -f deploy/vectordb -n aichat
+
+# docker composeモードのログ
+docker compose logs -f backend
 ```
 
 ---
@@ -110,87 +152,80 @@ kubectl logs -f deploy/vectordb -n aichat
 #### Podが起動しない場合
 
 ```bash
-# Podの詳細確認
 kubectl describe pod <pod名> -n aichat
-
-# イメージ再ビルド（Minikubeモード）
-eval $(minikube docker-env)
-docker build -t aichat:latest -f src/backend/Dockerfile .
 kubectl rollout restart deployment/backend -n aichat
 ```
 
 #### ChromaDBに接続できない場合
 
 ```bash
-# ChromaDB再起動
 kubectl rollout restart deployment/vectordb -n aichat
-
-# 接続確認
-kubectl exec -it <backend-pod名> -n aichat -c fastapi-app -- \
-  python -c "import urllib.request; print(urllib.request.urlopen('http://vectordb-service:8000/api/v2/heartbeat').status)"
-```
-
-#### Minikubeが起動しない場合
-
-```bash
-minikube status
-minikube stop
-minikube start
 ```
 
 #### docker composeでDockerに接続できない場合
 
 ```bash
-# Minikubeモードが残っている場合はリセット
+# Docker PATHが通っていない場合
+export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+
+# Minikubeモードのままになっている場合
 eval $(minikube docker-env -u)
 docker compose up -d
 ```
 
+#### CIが実行されない（待機中のまま）
+
+```bash
+# Runnerが起動しているか確認
+ps aux | grep Runner.Listener | grep -v grep
+
+# Runnerを再起動
+kill -9 $(pgrep -f Runner.Listener)
+cd ~/git_lesson/ai_chat/actions-runner
+./run.sh &
+```
+
 ---
 
-### メンテナンス
-
-#### PDFドキュメントのインデックス化
+### システムの停止
 
 ```bash
-# WebUIから実行
-# http://localhost:8000/api/indexer
-
-# APIから直接実行
-curl -X POST http://localhost:8000/api/pdf/index \
-  -H "Content-Type: application/json" \
-  -d '{"filename": "対象ファイル名.pdf"}'
-```
-
-#### PDFファイルの追加手順
-
-1. `src/backend/data/` に対象PDFを配置
-2. compose環境: `docker compose restart backend`
-3. minikube環境: `./rebuild_minikube.sh`
-4. WebUI（/api/indexer）からインデックス化を実行
-
-#### システムの停止
-
-```bash
-# Minikubeモード
-minikube stop
-
 # docker composeモード
 docker compose down
+
+# Minikubeモード
+minikube stop
 ```
 
-#### 一時的な外部公開（デモ用）
+---
+
+### 一時的な外部公開（ユーザーレビュー用）
 
 ```bash
-# ngrokで外部公開（社内機密に注意）
-ngrok http 8000
+# ngrokで外部公開（compose環境のみ・社内機密に注意）
+ngrok http 80
 ```
 
-#### チャット画面へのアクセス
+> ⚠️ ngrokはcompose環境でのユーザーレビュー時のみ使用。社内機密情報の取り扱いに注意。
 
-| 環境 | URL |
-|---------|-----|
-| compose（HTTP） | http://localhost:8000/ |
-| compose（HTTPS） | https://localhost/ |
-| Minikube（HTTP） | http://localhost:8090/ |
-| Minikube（HTTPS） | https://localhost/ |
+---
+
+### システム起動（Minikubeモード・HTTP）
+
+```bash
+./switch_to_minikube.sh
+./switch_to_http.sh
+# ドキュメントビューア: http://localhost:8090/api/specs
+# バックエンド API:     http://localhost:8090/swagger/docs
+# PDFインデクサー:      http://localhost:8090/api/indexer
+```
+
+### システム起動（Minikubeモード・HTTPS）
+
+```bash
+./switch_to_minikube.sh
+./switch_to_https.sh
+# ドキュメントビューア: https://localhost/api/specs
+# バックエンド API:     https://localhost/swagger/docs
+# PDFインデクサー:      https://localhost/api/indexer
+```

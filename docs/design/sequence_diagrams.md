@@ -1,5 +1,5 @@
 # Sequence Diagrams
-<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-08</div>
+<div align="right">作成日: 2026-06-05　最終更新日: 2026-06-14</div>
 
 ## シーケンス図
 
@@ -11,7 +11,7 @@ sequenceDiagram
     participant UI as チャット画面\n/
     participant BE as Backend\nFastAPI
     participant DB as ChromaDB
-    participant LLM as Gemini API\ngemini-2.0-flash
+    participant LLM as Gemini API\ngemini-2.5-flash
 
     User->>UI: 質問入力・送信
     UI->>BE: POST /api/chat\n{message: "..."}
@@ -19,9 +19,9 @@ sequenceDiagram
     BE->>DB: query_embeddings\nn_results=5
     DB-->>BE: 関連ドキュメント（TOP5）
     BE->>LLM: プロンプト生成・送信\n（参考資料+質問）
-    LLM-->>BE: 回答生成
+    LLM-->>BE: 回答生成（Markdown形式）
     BE-->>UI: {"answer": "..."}
-    UI-->>User: AIバブルで回答表示
+    UI-->>User: AIバブルでMarkdownレンダリング表示
 ```
 
 ---
@@ -39,7 +39,7 @@ sequenceDiagram
     Admin->>UI: ブラウザでアクセス
     UI->>BE: GET /api/pdf/list
     BE-->>UI: PDFファイル一覧
-    UI-->>Admin: ファイル一覧表示
+    UI-->>Admin: ファイル一覧表示（登録状況付き）
 
     Admin->>UI: インデックス化ボタンをクリック
     UI->>BE: POST /api/pdf/index\n{filename: "xxx.pdf"}
@@ -67,8 +67,6 @@ sequenceDiagram
     participant DB as ChromaDB
 
     MON->>BE: GET /health
-    BE->>DB: /api/v2/heartbeat
-    DB-->>BE: 200 OK
     BE-->>MON: {"status": "ok"}
 ```
 
@@ -98,14 +96,47 @@ sequenceDiagram
 sequenceDiagram
     actor Dev as 開発者
     participant GH as GitHub
-    participant Runner as Runner\n(Mac)
+    participant Runner as Self-hosted Runner\n(Mac M1)
     participant Docker as Docker
-    participant K8s as K8s
+    participant Trivy as Trivy
 
-    Dev->>GH: Push
+    Dev->>GH: Push（feature/**）
     GH->>Runner: Job実行
-    Runner->>Docker: build
-    Runner->>Docker: test
-    Runner->>K8s: dry-run
-    GH-->>Dev: 通知
+    Runner->>Docker: build（ai_chat-backend:latest）
+    Runner->>Docker: ruff format / ruff check / mypy
+    Runner->>Docker: pytest tests/unit/ --cov
+    Runner->>Docker: pytest tests/integration/
+    Runner->>Trivy: image scan（.trivyignore適用）
+    Trivy-->>Runner: 脆弱性レポート
+    Runner-->>GH: CI結果通知
+    Dev->>GH: Pull Request → main
+    Dev->>GH: workflow_dispatch: cd_only
+    GH->>Runner: デプロイジョブ実行
+    Runner->>Docker: docker compose up -d
+    Docker-->>Runner: 起動完了
+    Runner-->>GH: デプロイ完了
+```
+
+---
+
+### SD-006: ngrok外部公開フロー（ユーザーレビュー用）
+
+```mermaid
+sequenceDiagram
+    actor Admin as 管理者
+    participant ngrok as ngrok
+    participant FE as Frontend\nNginx:80
+    participant BE as Backend\nFastAPI:8000
+    actor User as 外部ユーザー
+
+    Admin->>ngrok: ngrok http 80
+    ngrok-->>Admin: https://xxxx.ngrok-free.dev
+    Admin->>User: URLを共有
+
+    User->>ngrok: https://xxxx.ngrok-free.dev
+    ngrok->>FE: http://localhost:80
+    FE->>BE: proxy_pass /api/
+    BE-->>FE: レスポンス
+    FE-->>ngrok: レスポンス
+    ngrok-->>User: チャット画面表示
 ```
