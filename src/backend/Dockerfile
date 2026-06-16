@@ -23,7 +23,8 @@ ENV GOOGLE_API_VERSION=v1
 
 # 6. ライブラリをインストール
 #RUN pip install --no-cache-dir -r requirements.txt
-COPY requirements.txt /app/requirements.txt
+#COPY requirements.txt /app/requirements.txt
+COPY src/backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # 7. バックエンドのソースコードをコピー
@@ -37,7 +38,7 @@ COPY tests/ /app/tests/
 COPY docs/ /app/docs/
 
 # 10. README.md をコピー
-COPY README.md /app/README.md
+# COPY README.md /app/README.md
 
 # 11. ポート開放の前に追加
 # 実行ユーザーをrootから変更（ホスト側のファイル権限問題を回避）

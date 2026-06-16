@@ -285,15 +285,16 @@
     </style>
   </head>
   <body>
-        <nav style="background:#2c2c2c;padding:10px 20px;display:flex;gap:12px;align-items:center;">
-      <span style="color:#aaa;font-size:13px;margin-right:8px;">🔗 メニュー:</span>
-      <a href="/api/chat/ui" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">💬 チャット</a>
-      <a href="/api/indexer" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📄 PDFインデクサー</a>
-      <a href="/api/specs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">📚 ドキュメント</a>
-      <a href="/swagger/docs" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🔧 API</a>
-      <a href="/api/utilities" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">🛠️ shユーティリティ</a>
-    <a href="/api/ci" style="color:#fff;background:#4a90d9;padding:6px 14px;border-radius:6px;text-decoration:none;font-size:13px;">⚙️ CI結果</a>
-    </nav>    <div class="wrapper-table">
+    <nav style="background: #2c2c2c; padding: 10px 20px; display: flex; gap: 12px; align-items: center">
+      <span style="color: #aaa; font-size: 13px; margin-right: 8px">🔗 メニュー:</span>
+      <a href="/api/chat/ui" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">💬 チャット</a>
+      <a href="/api/indexer" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">📄 PDFインデクサー</a>
+      <a href="/api/specs" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">📚 ドキュメント</a>
+      <a href="/swagger/docs" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">🔧 API</a>
+      <a href="/api/utilities" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">🛠️ shユーティリティ</a>
+      <a href="/api/ci" style="color: #fff; background: #4a90d9; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px">⚙️ CI結果</a>
+    </nav>
+    <div class="wrapper-table">
       <div class="wrapper-row">
         <div class="sidebar-cell">
           <div class="sidebar-container">
@@ -321,7 +322,7 @@
 
     <script>
       // Mermaid初期化
-      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+      mermaid.initialize({ startOnLoad: false, theme: "neutral" });
 
       // 定数定義
       const README_PATH = "/api/docs/README.md";
@@ -341,6 +342,13 @@
 
       // 1. 左側目次（./docs/README.md）の読み込みとパース
       async function loadIndex() {
+        //let fetchPath = targetLink.path;
+
+        // すでに "/api/" で始まっている場合はそのまま使う
+        //if (!fetchPath.startsWith("/api/")) {
+        //  fetchPath = `/api${fetchPath}`;
+        //}
+        
         try {
           const response = await fetch(README_PATH);
           if (!response.ok) throw new Error("README.md が見つかりません。");
@@ -436,27 +444,65 @@
 
       // 5. タブ切り替えとMarkdownのHTML変換処理
       async function switchTab(links, activeIndex) {
+
+        // ★ デバッグログ（ここが重要）
+        console.log("switchTab called:", { links, activeIndex });
+
         const tabs = tabsBar.querySelectorAll(".tab-button");
         tabs.forEach((tab, idx) => {
           tab.classList.toggle("active", idx === activeIndex);
         });
 
-        contentBody.innerHTML = '<div class="placeholder-msg"><i class="fa-solid fa-spinner fa-spin"></i> ファイルを読み込み中...</div>';
-
         const targetLink = links[activeIndex];
+
+        // ★ デバッグログ（ここが重要）
+        console.log("targetLink:", targetLink);
+
+        // 読み込み中表示
+        contentBody.innerHTML =
+          '<div class="placeholder-msg"><i class="fa-solid fa-spinner fa-spin"></i> ファイルを読み込み中...</div>';
+
         try {
-          const response = await fetch(targetLink.path);
-          if (!response.ok) throw new Error(`ファイルの取得に失敗しました: ${targetLink.path}`);
+          // ★ fetch の開始ログ
+          console.log("fetch start:", targetLink.path);
+
+          // パスが "/api/" で始まっていなければ "/api" を付ける
+          let fetchPath = targetLink.path;
+          if (!fetchPath.startsWith("/api/")) {
+            fetchPath = `/api${fetchPath}`;
+          }
+
+          console.log("fetch actual:", fetchPath);
+
+          const response = await fetch(fetchPath);
+          // ★ fetch のステータスログ
+          console.log("fetch response:", response.status);
+
+          if (!response.ok) {
+            throw new Error(`ファイルの取得に失敗しました: ${targetLink.path}`);
+          }
+
           const mdText = await response.text();
 
-          // marked.parse() を使用して毎回リアルタイムでHTMLに変換
+          // ★ 取得した Markdown の先頭 200 文字をログ
+          console.log("mdText:", mdText.substring(0, 200));
+
+          // Markdown → HTML
           const htmlContent = marked.parse(mdText);
           contentBody.innerHTML = `<div class="markdown-body">${htmlContent}</div>`;
-          // Mermaid図をレンダリング
-          await mermaid.run({ nodes: contentBody.querySelectorAll('.language-mermaid') });
+
+          // Mermaid
+          await mermaid.run({
+            nodes: contentBody.querySelectorAll(".language-mermaid"),
+          });
+
           contentBody.scrollTop = 0;
+
         } catch (error) {
-          contentBody.innerHTML = `<div class="placeholder-msg" style="color:red;"><i class="fa-solid fa-triangle-exclamation"></i> ${error.message}</div>`;
+          console.error("switchTab error:", error);
+          contentBody.innerHTML = `<div class="placeholder-msg" style="color:red;">
+            <i class="fa-solid fa-triangle-exclamation"></i> ${error.message}
+          </div>`;
         }
       }
 
@@ -464,6 +510,7 @@
       programDescLink.addEventListener("click", () => {
         document.querySelectorAll(".index-link, .footer-link").forEach((el) => el.classList.remove("active"));
         programDescLink.classList.add("active");
+        tabsBar.innerHTML = "";
         displayView([
           {
             label: "プログラム説明 (README.md)",
