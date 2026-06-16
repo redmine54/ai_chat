@@ -20,8 +20,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
+
 class RequestLogMiddleware(BaseHTTPMiddleware):
-    """ FastAPI に「何が要求されたか」をすべてログ出力するミドルウェア """
+    """FastAPI に「何が要求されたか」をすべてログ出力するミドルウェア"""
+
     async def dispatch(self, request: StarletteRequest, call_next):
         print(f"[REQUEST] {request.method} {request.url.path}")
         if request.query_params:
@@ -33,8 +35,6 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
 
         print(f"[RESPONSE] {response.status_code} for {request.url.path}")
         return response
-
-
 
 
 # キャッシュ無効化ミドルウェア
@@ -54,6 +54,8 @@ app.add_middleware(RequestLogMiddleware)
 
 # デバッグ ls
 README_PATH = os.path.join(BASE_DIR, "README.md")
+
+
 @app.get("/api/root_meta/debug_ls")
 def debug_ls():
     return {
@@ -63,10 +65,11 @@ def debug_ls():
         "README_path": README_PATH,
     }
 
+
 from fastapi import Response
 
-#@app.get("/api/root_meta/README.md")
-#def get_root_readme():
+# @app.get("/api/root_meta/README.md")
+# def get_root_readme():
 #    with open(README_PATH, "r", encoding="utf-8") as f:
 #        content = f.read()
 #    return Response(content, media_type="text/plain")
@@ -275,22 +278,15 @@ app.mount(
 )
 
 # ルート直下のREADME.md用
-#if os.path.exists(os.path.join(BASE_DIR, "README.md")):
+# if os.path.exists(os.path.join(BASE_DIR, "README.md")):
 #    app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
-app.mount(
-    "/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta"
-)
+app.mount("/api/root_meta", StaticFiles(directory=BASE_DIR), name="root_meta")
 
-#app.mount(
+# app.mount(
 #    "/api/root_meta",
 #    StaticFiles(directory=BASE_DIR),
 #    name="root_meta"
-#)
-
-
-
-
-
+# )
 
 
 # チャット画面（メイン）
