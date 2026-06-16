@@ -32,11 +32,15 @@ services:
       - ./src/backend/data:/app/data
       - ./src/backend/templates:/app/templates
       - ./tests:/app/tests  # ← 追加
-      - ./README.md:/app/README.md  # ← 追加
+      #- ./README.md:/app/README.md  # ← 追加
+      - ./README.md:/host/README.md:ro   # ← ここは /app ではなく /host にするのがポイント
 
+    command: >
+      sh -c "cp /host/README.md /app/README.md &&
+       uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300"
 
     #  - chroma-persistent:/app/chroma   # PersistentClient用ボリューム追加
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
+    #command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
 
   vectordb:
     image: chromadb/chroma:latest
