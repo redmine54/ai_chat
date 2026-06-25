@@ -165,6 +165,69 @@ jobs:
           echo "✅ Dockerの脆弱性検査は正常に終了しました。脆弱性は検出されませんでした。" || \
           echo "✅ Dockerの脆弱性検査は正常に終了しました。但し、脆弱性が検出されています。詳細は上記のレポートを参照してください。対応: .trivyignoreに未対応のCVEを追加するか、該当パッケージのアップグレードを検討してください。"
 
+      # 18-1) SBOM出力 (SPDX JSON形式 / ツール連携向け)
+      - name: Generate SBOM (Trivy / SPDX JSON)
+        if: github.event.inputs.mode != 'cd_only'
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $PWD:/output \
+            aquasec/trivy:latest image \
+            --format spdx-json \
+            --output /output/sbom.spdx.json \
+            ai_chat-backend:latest && \
+          echo "✅ SBOM出力が完了しました。(sbom.spdx.json)"
+
+      # 18-2) SBOM出力 (SPDXタグ値形式 / 人が読む用)
+      - name: Generate SBOM (Trivy / SPDX tag-value)
+        if: github.event.inputs.mode != 'cd_only'
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $PWD:/output \
+            aquasec/trivy:latest image \
+            --format spdx \
+            --output /output/sbom.spdx \
+            ai_chat-backend:latest && \
+          echo "✅ SBOM出力が完了しました。(sbom.spdx)"
+
+      # 18-3) SBOMの内容サマリーをログに表示
+      - name: Show SBOM summary
+        if: github.event.inputs.mode != 'cd_only'
+        run: |
+          echo "==============================="
+          echo "📦 SBOM サマリー"
+          echo "==============================="
+          echo "ファイル名 : sbom.spdx.json / sbom.spdx"
+          echo "対象イメージ: ai_chat-backend:latest"
+          echo "コミット   : ${{ github.sha }}"
+          echo "生成日時   : $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "パッケージ数: $(cat sbom.spdx.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('packages', [])))" 2>/dev/null || echo '取得失敗')"
+          echo "==============================="
+
+      # 18-4) 両ファイルをまとめてアーティファクト保存
+      - name: Upload SBOM
+        if: github.event.inputs.mode != 'cd_only'
+        continue-on-error: true
+        id: upload-sbom
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-spdx-${{ github.sha }}
+          path: |
+            sbom.spdx.json
+            sbom.spdx
+          retention-days: 90
+
+      # 18-5) SBOMアップロード結果の表示
+      - name: Upload SBOM result
+        if: github.event.inputs.mode != 'cd_only'
+        run: |
+          if [ "${{ steps.upload-sbom.outcome }}" == "success" ]; then
+            echo "✅ sbom.spdx.json / sbom.spdx のアップロードが完了しました。(保存期間: 90日)"
+          else
+            echo "⚠️ SBOM のアップロードに失敗しました。CIは続行します。"
+          fi
+
       # 19) K8s 検証（compose の場合はスキップ）
       - name: Skip K8s validation (compose)
         if: env.DEPLOY_ENV == 'compose' && github.event.inputs.mode != 'cd_only'
